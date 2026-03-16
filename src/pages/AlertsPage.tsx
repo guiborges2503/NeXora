@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useEffect, useMemo, useState } from "react";
 import {
   Select,
   SelectContent,
@@ -10,51 +11,79 @@ import {
 } from "@/components/ui/select";
 import { AlertTriangle, TrendingDown, Users, Package, CheckCircle2, Clock } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { apiGet } from "@/config/api";
+import { isPwaMode } from "@/config/pwa";
+import { cn } from "@/components/ui/utils";
 
-const alerts = [
-  {
-    id: 1,
-    title: "Queda acentuada nas vendas online",
-    description: "Redução de 15% nas vendas online nos últimos 7 dias comparado ao período anterior",
-    severity: "high",
-    status: "active",
-    category: "Vendas",
-    timestamp: "Há 2 horas",
-    icon: TrendingDown,
-  },
-  {
-    id: 2,
-    title: "Taxa de churn acima da média",
-    description: "A taxa de cancelamento de clientes está 8% acima da média histórica",
-    severity: "medium",
-    status: "active",
-    category: "Clientes",
-    timestamp: "Há 5 horas",
-    icon: Users,
-  },
-  {
-    id: 3,
-    title: "Estoque baixo em produtos chave",
-    description: "5 produtos principais com estoque abaixo do nível crítico",
-    severity: "medium",
-    status: "active",
-    category: "Estoque",
-    timestamp: "Há 1 dia",
-    icon: Package,
-  },
-  {
-    id: 4,
-    title: "Meta de vendas atingida",
-    description: "A equipe de vendas atingiu 105% da meta mensal com 5 dias de antecedência",
-    severity: "low",
-    status: "resolved",
-    category: "Vendas",
-    timestamp: "Há 2 dias",
-    icon: CheckCircle2,
-  },
-];
+type AlertItem = {
+  id: number;
+  title: string;
+  description: string;
+  severity: "high" | "medium" | "low" | "info";
+  status: "active" | "resolved";
+  category: string;
+  timestamp: string;
+};
+
+type AlertsResponse = {
+  items: AlertItem[];
+  stats: {
+    total: number;
+    high: number;
+    active: number;
+    resolved: number;
+  };
+};
 
 export function AlertsPage() {
+  const pwaMode = isPwaMode();
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [stats, setStats] = useState<AlertsResponse["stats"]>({
+    total: 0,
+    high: 0,
+    active: 0,
+    resolved: 0,
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [severityFilter, setSeverityFilter] = useState("all");
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadAlerts() {
+      try {
+        const data = await apiGet<AlertsResponse>("/alerts.php");
+        if (mounted) {
+          setAlerts(data.items);
+          setStats(data.stats);
+        }
+      } catch (error) {
+        if (mounted) {
+          setErrorMessage(
+            error instanceof Error ? error.message : "Não foi possível carregar alertas."
+          );
+        }
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadAlerts();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const filteredAlerts = useMemo(() => {
+    if (severityFilter === "all") {
+      return alerts;
+    }
+    return alerts.filter((alert) => alert.severity === severityFilter);
+  }, [alerts, severityFilter]);
+
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case "high":
@@ -81,30 +110,37 @@ export function AlertsPage() {
     }
   };
 
+  const getAlertIcon = (severity: string) => {
+    switch (severity) {
+      case "high":
+        return TrendingDown;
+      case "medium":
+        return Users;
+      case "low":
+        return CheckCircle2;
+      default:
+        return Package;
+    }
+  };
+
   return (
-    <div className="space-y-6">
+    <div className={cn("space-y-6", pwaMode && "space-y-4")}>
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold mb-2">Alertas Inteligentes</h1>
-          <p className="text-muted-foreground">
-            Acompanhe alertas automáticos baseados em seus dados
-          </p>
-        </div>
-        <Button size="lg" variant="outline">
+      <div className={cn("flex items-center justify-end", pwaMode && "justify-stretch")}>
+        <Button size={pwaMode ? "default" : "lg"} variant="outline" className={cn(pwaMode && "w-full")}>
           <AlertTriangle className="w-4 h-4 mr-2" />
           Configurar Alertas
         </Button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className={cn("grid grid-cols-1 md:grid-cols-4 gap-6", pwaMode && "grid-cols-2 gap-3")}>
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Total</p>
-                <p className="text-2xl font-semibold">12</p>
+                <p className="text-2xl font-semibold">{stats.total}</p>
               </div>
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
                 <AlertTriangle className="w-6 h-6 text-primary" />
@@ -117,7 +153,7 @@ export function AlertsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Alta Prioridade</p>
-                <p className="text-2xl font-semibold text-red-600">3</p>
+                <p className="text-2xl font-semibold text-red-600">{stats.high}</p>
               </div>
               <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
                 <AlertTriangle className="w-6 h-6 text-red-600" />
@@ -130,7 +166,7 @@ export function AlertsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Ativos</p>
-                <p className="text-2xl font-semibold text-orange-600">7</p>
+                <p className="text-2xl font-semibold text-orange-600">{stats.active}</p>
               </div>
               <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
                 <Clock className="w-6 h-6 text-orange-600" />
@@ -143,7 +179,7 @@ export function AlertsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Resolvidos</p>
-                <p className="text-2xl font-semibold text-green-600">5</p>
+                <p className="text-2xl font-semibold text-green-600">{stats.resolved}</p>
               </div>
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                 <CheckCircle2 className="w-6 h-6 text-green-600" />
@@ -154,9 +190,9 @@ export function AlertsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4">
+      <div className={cn("flex gap-4", pwaMode && "flex-col gap-2")}>
         <Select>
-          <SelectTrigger className="w-48 bg-card border-border">
+          <SelectTrigger className={cn("w-48 bg-card border-border", pwaMode && "w-full")}>
             <SelectValue placeholder="Todas categorias" />
           </SelectTrigger>
           <SelectContent>
@@ -167,8 +203,8 @@ export function AlertsPage() {
             <SelectItem value="finance">Financeiro</SelectItem>
           </SelectContent>
         </Select>
-        <Select>
-          <SelectTrigger className="w-48 bg-card border-border">
+        <Select value={severityFilter} onValueChange={setSeverityFilter}>
+          <SelectTrigger className={cn("w-48 bg-card border-border", pwaMode && "w-full")}>
             <SelectValue placeholder="Todas prioridades" />
           </SelectTrigger>
           <SelectContent>
@@ -182,22 +218,27 @@ export function AlertsPage() {
 
       {/* Alerts Tabs */}
       <Tabs defaultValue="active" className="w-full">
-        <TabsList>
+        <TabsList className={cn(pwaMode && "w-full justify-start overflow-x-auto")}>
           <TabsTrigger value="active">Ativos</TabsTrigger>
           <TabsTrigger value="resolved">Resolvidos</TabsTrigger>
           <TabsTrigger value="all">Todos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="active" className="space-y-4 mt-6">
-          {alerts
+          {filteredAlerts
             .filter((alert) => alert.status === "active")
             .map((alert) => {
-              const Icon = alert.icon;
+              const Icon = getAlertIcon(alert.severity);
               return (
                 <Card key={alert.id} className="hover:shadow-md transition-shadow">
                   <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex gap-4">
+                    <div
+                      className={cn(
+                        "flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between",
+                        pwaMode && "flex-col items-stretch",
+                      )}
+                    >
+                      <div className={cn("flex gap-4 min-w-0", pwaMode && "gap-3")}>
                         <div
                           className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${getSeverityColor(
                             alert.severity
@@ -205,9 +246,11 @@ export function AlertsPage() {
                         >
                           <Icon className="w-6 h-6" />
                         </div>
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-lg">{alert.title}</h3>
+                        <div className={cn("space-y-2 min-w-0", pwaMode && "w-full")}>
+                          <div className={cn("flex items-center gap-2", pwaMode && "flex-wrap")}>
+                            <h3 className={cn("font-semibold text-lg", pwaMode && "text-base leading-tight")}>
+                              {alert.title}
+                            </h3>
                             <Badge
                               variant="outline"
                               className={getSeverityColor(alert.severity)}
@@ -216,17 +259,19 @@ export function AlertsPage() {
                             </Badge>
                           </div>
                           <p className="text-muted-foreground">{alert.description}</p>
-                          <div className="flex items-center gap-4 text-sm">
+                          <div className={cn("flex items-center gap-4 text-sm", pwaMode && "flex-wrap gap-2")}>
                             <Badge variant="secondary">{alert.category}</Badge>
                             <span className="text-muted-foreground">{alert.timestamp}</span>
                           </div>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
+                      <div className={cn("flex w-full gap-2 sm:w-auto sm:justify-end", pwaMode && "w-full")}>
+                        <Button variant="outline" size="sm" className={cn(pwaMode && "flex-1")}>
                           Ver Detalhes
                         </Button>
-                        <Button size="sm">Resolver</Button>
+                        <Button size="sm" className={cn(pwaMode && "flex-1")}>
+                          Resolver
+                        </Button>
                       </div>
                     </div>
                   </CardHeader>
@@ -236,27 +281,34 @@ export function AlertsPage() {
         </TabsContent>
 
         <TabsContent value="resolved" className="space-y-4 mt-6">
-          {alerts
+          {filteredAlerts
             .filter((alert) => alert.status === "resolved")
             .map((alert) => {
-              const Icon = alert.icon;
+              const Icon = getAlertIcon(alert.severity);
               return (
                 <Card key={alert.id} className="opacity-60">
                   <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex gap-4">
+                    <div
+                      className={cn(
+                        "flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between",
+                        pwaMode && "flex-col items-stretch",
+                      )}
+                    >
+                      <div className={cn("flex gap-4 min-w-0", pwaMode && "gap-3")}>
                         <div className="w-12 h-12 bg-green-100 text-green-700 rounded-lg flex items-center justify-center flex-shrink-0">
                           <Icon className="w-6 h-6" />
                         </div>
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-lg">{alert.title}</h3>
+                        <div className={cn("space-y-2 min-w-0", pwaMode && "w-full")}>
+                          <div className={cn("flex items-center gap-2", pwaMode && "flex-wrap")}>
+                            <h3 className={cn("font-semibold text-lg", pwaMode && "text-base leading-tight")}>
+                              {alert.title}
+                            </h3>
                             <Badge variant="outline" className="bg-green-100 text-green-700">
                               Resolvido
                             </Badge>
                           </div>
                           <p className="text-muted-foreground">{alert.description}</p>
-                          <div className="flex items-center gap-4 text-sm">
+                          <div className={cn("flex items-center gap-4 text-sm", pwaMode && "flex-wrap gap-2")}>
                             <Badge variant="secondary">{alert.category}</Badge>
                             <span className="text-muted-foreground">{alert.timestamp}</span>
                           </div>
@@ -270,8 +322,32 @@ export function AlertsPage() {
         </TabsContent>
 
         <TabsContent value="all" className="space-y-4 mt-6">
-          {alerts.map((alert) => {
-            const Icon = alert.icon;
+          {isLoading ? (
+            <Card>
+              <CardHeader>
+                <p className="text-muted-foreground">Carregando alertas...</p>
+              </CardHeader>
+            </Card>
+          ) : null}
+
+          {!isLoading && errorMessage ? (
+            <Card>
+              <CardHeader>
+                <p className="text-destructive">{errorMessage}</p>
+              </CardHeader>
+            </Card>
+          ) : null}
+
+          {!isLoading && !errorMessage && filteredAlerts.length === 0 ? (
+            <Card>
+              <CardHeader>
+                <p className="text-muted-foreground">Nenhum alerta encontrado.</p>
+              </CardHeader>
+            </Card>
+          ) : null}
+
+          {filteredAlerts.map((alert) => {
+            const Icon = getAlertIcon(alert.severity);
             return (
               <Card
                 key={alert.id}
@@ -280,8 +356,13 @@ export function AlertsPage() {
                 }`}
               >
                 <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex gap-4">
+                  <div
+                    className={cn(
+                      "flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between",
+                      pwaMode && "flex-col items-stretch",
+                    )}
+                  >
+                    <div className={cn("flex gap-4 min-w-0", pwaMode && "gap-3")}>
                       <div
                         className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
                           alert.status === "resolved"
@@ -291,9 +372,11 @@ export function AlertsPage() {
                       >
                         <Icon className="w-6 h-6" />
                       </div>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-lg">{alert.title}</h3>
+                      <div className={cn("space-y-2 min-w-0", pwaMode && "w-full")}>
+                        <div className={cn("flex items-center gap-2", pwaMode && "flex-wrap")}>
+                          <h3 className={cn("font-semibold text-lg", pwaMode && "text-base leading-tight")}>
+                            {alert.title}
+                          </h3>
                           <Badge
                             variant="outline"
                             className={
@@ -308,18 +391,20 @@ export function AlertsPage() {
                           </Badge>
                         </div>
                         <p className="text-muted-foreground">{alert.description}</p>
-                        <div className="flex items-center gap-4 text-sm">
+                        <div className={cn("flex items-center gap-4 text-sm", pwaMode && "flex-wrap gap-2")}>
                           <Badge variant="secondary">{alert.category}</Badge>
                           <span className="text-muted-foreground">{alert.timestamp}</span>
                         </div>
                       </div>
                     </div>
                     {alert.status === "active" && (
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
+                      <div className={cn("flex w-full gap-2 sm:w-auto sm:justify-end", pwaMode && "w-full")}>
+                        <Button variant="outline" size="sm" className={cn(pwaMode && "flex-1")}>
                           Ver Detalhes
                         </Button>
-                        <Button size="sm">Resolver</Button>
+                        <Button size="sm" className={cn(pwaMode && "flex-1")}>
+                          Resolver
+                        </Button>
                       </div>
                     )}
                   </div>

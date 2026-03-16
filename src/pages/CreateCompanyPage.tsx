@@ -8,13 +8,6 @@ import { Link } from "react-router";
 export function CreateCompanyPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-3xl font-semibold mb-2">Cadastrar Empresa</h1>
-        <p className="text-muted-foreground">
-          Configure os dados da sua empresa na plataforma
-        </p>
-      </div>
-
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

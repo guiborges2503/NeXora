@@ -1,107 +1,98 @@
-# API TCC - Base Nortrek
+# API NeXora - Backend PHP com SQLite
 
-Estrutura da API seguindo o padrão do projeto Nortrek para manter consistência.
+Estrutura base de backend em PHP usando SQLite como banco padrão local, com separação por camadas (Controller, Service, Repository) e scripts de migração/seed.
 
-## Estrutura de Pastas
+## Estrutura
 
 ```
 api/
-├── settings/           # Configurações
-│   ├── app_config.php  # CORS, ambiente, URLs
-│   ├── settings.php    # Banco de dados, constantes
-│   └── includes.php    # Carregamento centralizado
-├── shared/             # Classes base (padrão Nortrek)
-│   ├── Database.php   # Singleton PDO
-│   ├── Request.php    # Encapsula requisição HTTP
-│   ├── Response.php   # Padroniza respostas JSON
-│   ├── Logger.php     # Sistema de logs
-│   └── autoload.php   # Autoload Shared
-├── helpers/            # Funções auxiliares
-├── logs/               # Logs da aplicação
-├── cors.php            # Configuração CORS
-├── app_info.php        # GET - Informações da aplicação
-├── health.php          # GET - Health check
-└── _endpoint_template.php  # Template para novos endpoints
+├── app/
+│   ├── Controllers/
+│   ├── Services/
+│   ├── Repositories/
+│   └── Validators/
+├── database/
+│   ├── data/                # Arquivo .sqlite (não versionado)
+│   ├── migrations/          # SQL de estrutura
+│   ├── seeders/             # SQL de dados iniciais
+│   ├── migrate.php          # Runner de migrations
+│   └── seed.php             # Runner de seed
+├── settings/
+├── shared/
+├── logs/
+├── auth_login.php
+├── auth_register.php
+├── users.php
+├── app_info.php
+├── health.php
+└── _endpoint_template.php
 ```
 
-## Padrão de Endpoint
+## Banco de Dados
 
-Todo endpoint deve seguir esta estrutura:
+Por padrão, o backend usa SQLite:
 
-```php
-<?php
-include_once __DIR__ . "/settings/includes.php";
-include_once __DIR__ . "/cors.php";
+- `DB_DRIVER=sqlite`
+- `SQLITE_PATH=api/database/data/nexora.sqlite`
 
-header("Content-Type: application/json; charset=utf-8");
-setCorsHeaders();
+Você pode trocar para MySQL alterando as variáveis de ambiente (`DB_DRIVER=mysql` e demais variáveis `DB_*`).
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
+## Como iniciar a base de dados
 
-if ($_SERVER['REQUEST_METHOD'] !== 'GET') {  // Ajustar método
-    \Shared\Response::error('Método não permitido', 405)->send();
-}
+Na raiz do projeto:
 
-try {
-    $request = new \Shared\Request();
-    // ... lógica ...
-    \Shared\Response::success($data)->send();
-} catch (Exception $e) {
-    \Shared\Logger::getInstance()->error('endpoint: ' . $e->getMessage());
-    \Shared\Response::error('Erro interno', 500)->send();
+```bash
+php api/database/migrate.php
+php api/database/seed.php
+```
+
+Isso cria tabelas centrais:
+
+- `users`
+- `roles`
+- `permissions`
+- `user_roles`
+- `role_permissions`
+- `dashboards`
+- `alerts`
+- `audit_logs`
+
+## Endpoints disponíveis
+
+| Endpoint | Método | Descrição |
+|----------|--------|-----------|
+| `/api/health.php` | `GET` | Health check da API e status da conexão |
+| `/api/app_info.php` | `GET` | Informações básicas da aplicação |
+| `/api/auth_register.php` | `POST` | Cadastro de usuário |
+| `/api/auth_login.php` | `POST` | Login de usuário |
+| `/api/users.php` | `GET` | Listagem de usuários |
+
+## Payloads de exemplo
+
+### `POST /api/auth_register.php`
+
+```json
+{
+  "name": "Maria Silva",
+  "email": "maria@empresa.com",
+  "password": "123456"
 }
 ```
 
-## Classes Shared
+### `POST /api/auth_login.php`
 
-### Response
-- `Response::success($data, $statusCode, $message)` - Resposta de sucesso
-- `Response::error($message, $statusCode, $errors)` - Resposta de erro
-- `Response::validationError($errors, $message)` - Erro 422
-- `Response::notFound($message)` - Erro 404
-- `Response::unauthorized($message)` - Erro 401
-- `Response::forbidden($message)` - Erro 403
-- `->send()` - Envia JSON e encerra
+```json
+{
+  "email": "admin@nexora.local",
+  "password": "admin123"
+}
+```
 
-### Request
-- `getBody()` - Corpo da requisição (JSON ou POST)
-- `getBodyParam($key, $default)` - Parâmetro do corpo
-- `getQueryParam($key, $default)` - Query string
-- `getMethod()` - GET, POST, etc.
-- `getHeader($key)` - Header HTTP
+## Padrão de implementação
 
-### Database
-- `Database::getInstance()->getConnection()` - Retorna PDO
+1. Endpoint (`api/*.php`) valida método HTTP e trata exceções.
+2. Controller recebe `Request` e retorna `Response`.
+3. Service aplica regras de negócio.
+4. Repository acessa o banco via PDO.
 
-### Logger
-- `Logger::getInstance()->info($msg, $context)`
-- `Logger::getInstance()->error($msg, $context)`
-- `Logger::getInstance()->warning($msg, $context)`
-- `Logger::getInstance()->debug($msg, $context)`
-
-## Configuração
-
-### Banco de dados (`settings/settings.php`)
-- Use variáveis de ambiente em produção: `DB_NAME`, `DB_HOST`, `DB_USER`, `DB_PASS`, `DB_PORT`
-- Desenvolvimento: padrão root/sem senha em localhost
-
-### CORS (`settings/app_config.php`)
-- `CORS_ALLOWED_ORIGINS` - Origens permitidas
-- `FRONTEND_BASE_URL` - URL do frontend
-
-## Endpoints Base
-
-| Endpoint      | Método | Descrição                    |
-|---------------|--------|------------------------------|
-| `/api/app_info.php` | GET  | Versão e informações da API   |
-| `/api/health.php`   | GET  | Status da API e conexão DB   |
-
-## Criar Novo Endpoint
-
-1. Copie `_endpoint_template.php`
-2. Renomeie (ex: `usuarios.php`)
-3. Ajuste método HTTP e lógica
-4. Acesse via `http://localhost/TCC/api/usuarios.php`
+Esse padrão facilita crescimento para módulos de permissões, dashboards, alertas e auditoria.

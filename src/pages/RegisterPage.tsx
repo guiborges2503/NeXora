@@ -1,18 +1,78 @@
-import { Link } from "react-router";
+import { type FormEvent, useState } from "react";
+import { Link, useNavigate } from "react-router";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import logoImg from "@/img/logo.png";
 import logotipoImg from "@/img/logotipo.png";
+import { API_BASE_URL } from "@/config/api";
 
 export function RegisterPage() {
+  const navigate = useNavigate();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  function isHttpsOrLocalApi(baseUrl: string): boolean {
+    try {
+      const parsedUrl = new URL(baseUrl);
+      const isLocalHost = ["localhost", "127.0.0.1", "::1"].includes(parsedUrl.hostname);
+      return parsedUrl.protocol === "https:" || isLocalHost;
+    } catch {
+      return true;
+    }
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      setErrorMessage("Preencha nome, e-mail e senha.");
+      return;
+    }
+
+    if (!isHttpsOrLocalApi(API_BASE_URL)) {
+      setErrorMessage("Por segurança, o cadastro em produção exige API com HTTPS.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth_register.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        referrerPolicy: "no-referrer",
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+        }),
+      });
+
+      const payload = (await response.json()) as { success: boolean; message?: string };
+      if (!response.ok || !payload.success) {
+        setErrorMessage(payload.message ?? "Não foi possível criar a conta.");
+        return;
+      }
+
+      setSuccessMessage("Conta criada com sucesso. Faça login para continuar.");
+      setPassword("");
+      setTimeout(() => navigate("/auth/login"), 1000);
+    } catch (_error) {
+      setErrorMessage("Erro de conexão com o servidor.");
+    } finally {
+      setIsLoading(false);
+      setPassword("");
+    }
+  }
+
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Illustration */}
@@ -46,11 +106,13 @@ export function RegisterPage() {
                 Criar nova conta
               </h2>
               <p className="text-muted-foreground">
-                Preencha os dados para cadastrar um novo usuário
+                Preencha os dados para cadastrar um novo usuário.
+                <br />
+                O perfil de acesso será definido pelo administrador.
               </p>
             </div>
 
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="space-y-2">
                 <Label htmlFor="name">Nome completo</Label>
                 <Input
@@ -58,6 +120,8 @@ export function RegisterPage() {
                   type="text"
                   placeholder="João Silva"
                   className="bg-input-background border-border"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
                 />
               </div>
 
@@ -68,6 +132,8 @@ export function RegisterPage() {
                   type="email"
                   placeholder="seu@email.com"
                   className="bg-input-background border-border"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
                 />
               </div>
 
@@ -78,25 +144,20 @@ export function RegisterPage() {
                   type="password"
                   placeholder="••••••••"
                   className="bg-input-background border-border"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="role">Perfil de Acesso</Label>
-                <Select>
-                  <SelectTrigger className="bg-input-background border-border">
-                    <SelectValue placeholder="Selecione o perfil" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Administrador</SelectItem>
-                    <SelectItem value="manager">Gestor</SelectItem>
-                    <SelectItem value="user">Colaborador</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {errorMessage ? (
+                <p className="text-sm text-destructive">{errorMessage}</p>
+              ) : null}
+              {successMessage ? (
+                <p className="text-sm text-emerald-600">{successMessage}</p>
+              ) : null}
 
-              <Button asChild className="w-full" size="lg">
-                <Link to="/home">Criar Conta</Link>
+              <Button className="w-full" size="lg" type="submit" disabled={isLoading}>
+                {isLoading ? "Criando conta..." : "Criar Conta"}
               </Button>
             </form>
 

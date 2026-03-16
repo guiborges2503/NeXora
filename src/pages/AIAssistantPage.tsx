@@ -6,6 +6,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Send, Bot, User, Sparkles, TrendingUp, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/components/ui/utils";
+import { isPwaMode } from "@/config/pwa";
 
 const chatHistory = [
   {
@@ -50,6 +52,7 @@ const chatHistory = [
 
 export function AIAssistantPage() {
   const [message, setMessage] = useState("");
+  const pwaMode = isPwaMode();
 
   const conversationStarters = [
     "Analise o desempenho de vendas do mês",
@@ -59,18 +62,15 @@ export function AIAssistantPage() {
   ];
 
   return (
-    <div className="h-[calc(100vh-8rem)] space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-semibold mb-2">Assistente IA</h1>
-        <p className="text-muted-foreground">
-          Faça perguntas sobre seus dados e receba insights inteligentes
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100%-5rem)]">
+    <div className={cn("space-y-6", pwaMode ? "min-h-0" : "h-[calc(100vh-8rem)]")}>
+      <div
+        className={cn(
+          "grid grid-cols-1 lg:grid-cols-4 gap-6",
+          pwaMode ? "min-h-0 gap-3" : "h-[calc(100%-5rem)]",
+        )}
+      >
         {/* Conversation History Sidebar */}
-        <Card className="lg:col-span-1 overflow-hidden">
+        <Card className={cn("lg:col-span-1 overflow-hidden", pwaMode && "hidden lg:block")}>
           <CardHeader className="pb-4">
             <CardTitle className="text-lg">Conversas Recentes</CardTitle>
           </CardHeader>
@@ -97,8 +97,8 @@ export function AIAssistantPage() {
         </Card>
 
         {/* Chat Area */}
-        <div className="lg:col-span-3 flex flex-col">
-          <Card className="flex-1 flex flex-col overflow-hidden">
+        <div className={cn("lg:col-span-3 flex flex-col", pwaMode && "min-h-0")}>
+          <Card className={cn("flex-1 flex flex-col overflow-hidden", pwaMode && "min-h-0")}>
             <CardHeader className="border-b">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
@@ -115,7 +115,7 @@ export function AIAssistantPage() {
 
             <CardContent className="flex-1 p-0 overflow-hidden flex flex-col">
               {/* Messages */}
-              <ScrollArea className="flex-1 p-6">
+              <ScrollArea className={cn("flex-1 p-6", pwaMode && "p-3")}>
                 <div className="space-y-6">
                   {chatHistory.map((chat) => (
                     <div
@@ -211,7 +211,13 @@ export function AIAssistantPage() {
               )}
 
               {/* Input Area */}
-              <div className="border-t p-4">
+              <div
+                className={cn(
+                  "border-t p-4",
+                  pwaMode &&
+                    "bg-card p-3 mb-[calc(4.5rem+env(safe-area-inset-bottom))] pb-[max(env(safe-area-inset-bottom),0.5rem)]",
+                )}
+              >
                 <div className="flex gap-2">
                   <Input
                     placeholder="Digite sua pergunta..."

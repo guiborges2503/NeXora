@@ -29,12 +29,14 @@ try {
     \Shared\Response::success([
         'status' => 'ok',
         'timestamp' => date('c'),
+        'db_driver' => DB_DRIVER,
         'database' => $dbOk ? 'connected' : 'disconnected',
     ])->send();
 } catch (Exception $e) {
     \Shared\Response::success([
         'status' => 'ok',
         'timestamp' => date('c'),
+        'db_driver' => DB_DRIVER,
         'database' => 'disconnected',
         'message' => $e->getMessage(),
     ])->send();

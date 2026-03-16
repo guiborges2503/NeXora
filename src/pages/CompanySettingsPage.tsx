@@ -9,14 +9,6 @@ import { Building2, Upload, Save } from "lucide-react";
 export function CompanySettingsPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-semibold mb-2">Configurações da Empresa</h1>
-        <p className="text-muted-foreground">
-          Gerencie as informações e preferências da sua organização
-        </p>
-      </div>
-
       {/* Company Information */}
       <Card>
         <CardHeader>

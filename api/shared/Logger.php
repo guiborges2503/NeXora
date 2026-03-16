@@ -10,6 +10,15 @@ class Logger
     private static ?Logger $instance = null;
     private string $logDir;
     private bool $debugMode;
+    /** @var string[] */
+    private array $sensitiveKeys = [
+        'password',
+        'current_password',
+        'new_password',
+        'token',
+        'authorization',
+        'email',
+    ];
 
     private function __construct()
     {
@@ -54,7 +63,8 @@ class Logger
     private function log(string $level, string $message, array $context = []): void
     {
         $timestamp = date('Y-m-d H:i:s');
-        $contextStr = !empty($context) ? ' ' . json_encode($context, JSON_UNESCAPED_UNICODE) : '';
+        $safeContext = $this->sanitizeContext($context);
+        $contextStr = !empty($safeContext) ? ' ' . json_encode($safeContext, JSON_UNESCAPED_UNICODE) : '';
         $logMessage = "[{$timestamp}] [{$level}] {$message}{$contextStr}" . PHP_EOL;
 
         $logFile = $this->logDir . '/app.log';
@@ -66,6 +76,31 @@ class Logger
         }
 
         error_log(trim($logMessage));
+    }
+
+    private function sanitizeContext(array $context): array
+    {
+        $sanitized = [];
+        foreach ($context as $key => $value) {
+            if (is_array($value)) {
+                $sanitized[$key] = $this->sanitizeContext($value);
+                continue;
+            }
+
+            if ($this->isSensitiveKey((string) $key)) {
+                $sanitized[$key] = '[REDACTED]';
+                continue;
+            }
+
+            $sanitized[$key] = $value;
+        }
+
+        return $sanitized;
+    }
+
+    private function isSensitiveKey(string $key): bool
+    {
+        return in_array(strtolower($key), $this->sensitiveKeys, true);
     }
 
     private function __clone() {}

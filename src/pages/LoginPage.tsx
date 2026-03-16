@@ -1,11 +1,92 @@
-import { Link } from "react-router";
+import { type FormEvent, useState } from "react";
+import { Link, useNavigate } from "react-router";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import logoImg from "@/img/logo.png";
 import logotipoImg from "@/img/logotipo.png";
 
+type LoginApiResponse = {
+  success: boolean;
+  message?: string;
+  data?: {
+    id: number;
+    name: string;
+    email: string;
+    status: string;
+    role?: "admin" | "manager" | "viewer";
+    authenticated: boolean;
+  };
+};
+
 export function LoginPage() {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api";
+
+  function isHttpsOrLocalApi(baseUrl: string): boolean {
+    try {
+      const parsedUrl = new URL(baseUrl);
+      const isLocalHost = ["localhost", "127.0.0.1", "::1"].includes(parsedUrl.hostname);
+      return parsedUrl.protocol === "https:" || isLocalHost;
+    } catch {
+      return true;
+    }
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setErrorMessage("");
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !password) {
+      setErrorMessage("Informe e-mail e senha para continuar.");
+      return;
+    }
+
+    if (!isHttpsOrLocalApi(apiBaseUrl)) {
+      setErrorMessage("Por segurança, o login em produção exige API com HTTPS.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/auth_login.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+        referrerPolicy: "no-referrer",
+        body: JSON.stringify({
+          email: normalizedEmail,
+          password,
+        }),
+      });
+
+      const result = (await response.json()) as LoginApiResponse;
+
+      if (!response.ok || !result.success || !result.data?.authenticated) {
+        setErrorMessage(result.message ?? "Credenciais inválidas.");
+        return;
+      }
+
+      localStorage.setItem("nexora_user", JSON.stringify(result.data));
+      setPassword("");
+      navigate("/dashboards");
+    } catch (_error) {
+      setErrorMessage("Não foi possível conectar ao servidor de autenticação.");
+    } finally {
+      setIsLoading(false);
+      setPassword("");
+    }
+  }
+
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Form */}
@@ -27,7 +108,7 @@ export function LoginPage() {
               </p>
             </div>
 
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="space-y-2">
                 <Label htmlFor="email">E-mail</Label>
                 <Input
@@ -35,6 +116,9 @@ export function LoginPage() {
                   type="email"
                   placeholder="seu@email.com"
                   className="bg-input-background border-border"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  autoComplete="email"
                 />
               </div>
 
@@ -53,11 +137,18 @@ export function LoginPage() {
                   type="password"
                   placeholder="••••••••"
                   className="bg-input-background border-border"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete="current-password"
                 />
               </div>
 
-              <Button asChild className="w-full" size="lg">
-                <Link to="/home">Entrar</Link>
+              {errorMessage ? (
+                <p className="text-sm text-destructive">{errorMessage}</p>
+              ) : null}
+
+              <Button className="w-full" size="lg" type="submit" disabled={isLoading}>
+                {isLoading ? "Entrando..." : "Entrar"}
               </Button>
             </form>
 

@@ -46,14 +46,6 @@ const categoryData = [
 export function AdminDashboardPage() {
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-semibold mb-2">Dashboard Administrativo</h1>
-        <p className="text-muted-foreground">
-          Visão geral de métricas e analytics da plataforma
-        </p>
-      </div>
-
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>

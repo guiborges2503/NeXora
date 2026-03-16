@@ -2,120 +2,107 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Shield, Users, Edit3, Eye, Trash2, Save } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Shield, Users, Eye, Edit3, Save } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { apiGet } from "@/config/api";
 
-const roles = [
-  {
-    id: "admin",
-    name: "Administrador",
-    description: "Acesso total ao sistema",
-    users: 3,
-    color: "bg-red-100 text-red-700",
-  },
-  {
-    id: "manager",
-    name: "Gestor",
-    description: "Gerenciar dashboards e usuários da equipe",
-    users: 8,
-    color: "bg-blue-100 text-blue-700",
-  },
-  {
-    id: "user",
-    name: "Colaborador",
-    description: "Visualizar dashboards e gerar insights",
-    users: 24,
-    color: "bg-green-100 text-green-700",
-  },
-];
-
-const permissions = {
-  dashboards: [
-    { id: "dashboard_view", name: "Visualizar dashboards", icon: Eye },
-    { id: "dashboard_create", name: "Criar dashboards", icon: Edit3 },
-    { id: "dashboard_edit", name: "Editar dashboards", icon: Edit3 },
-    { id: "dashboard_delete", name: "Excluir dashboards", icon: Trash2 },
-  ],
-  users: [
-    { id: "user_view", name: "Visualizar usuários", icon: Users },
-    { id: "user_create", name: "Criar usuários", icon: Edit3 },
-    { id: "user_edit", name: "Editar usuários", icon: Edit3 },
-    { id: "user_delete", name: "Excluir usuários", icon: Trash2 },
-  ],
-  ai: [
-    { id: "ai_use", name: "Usar assistente IA", icon: Eye },
-    { id: "ai_advanced", name: "Recursos avançados de IA", icon: Edit3 },
-  ],
-  settings: [
-    { id: "settings_view", name: "Visualizar configurações", icon: Eye },
-    { id: "settings_edit", name: "Editar configurações", icon: Edit3 },
-  ],
+type Role = {
+  id: string;
+  name: string;
+  description: string;
+  users: number;
 };
 
-const defaultPermissions = {
-  admin: {
-    dashboard_view: true,
-    dashboard_create: true,
-    dashboard_edit: true,
-    dashboard_delete: true,
-    user_view: true,
-    user_create: true,
-    user_edit: true,
-    user_delete: true,
-    ai_use: true,
-    ai_advanced: true,
-    settings_view: true,
-    settings_edit: true,
-  },
-  manager: {
-    dashboard_view: true,
-    dashboard_create: true,
-    dashboard_edit: true,
-    dashboard_delete: false,
-    user_view: true,
-    user_create: false,
-    user_edit: true,
-    user_delete: false,
-    ai_use: true,
-    ai_advanced: true,
-    settings_view: true,
-    settings_edit: false,
-  },
-  user: {
-    dashboard_view: true,
-    dashboard_create: false,
-    dashboard_edit: false,
-    dashboard_delete: false,
-    user_view: false,
-    user_create: false,
-    user_edit: false,
-    user_delete: false,
-    ai_use: true,
-    ai_advanced: false,
-    settings_view: false,
-    settings_edit: false,
-  },
+type Permission = {
+  id: string;
+  name: string;
+  description: string;
+};
+
+type PermissionsResponse = {
+  roles: Role[];
+  permissions: Permission[];
+  rolePermissions: Record<string, string[]>;
 };
 
 export function PermissionsPage() {
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [rolePermissions, setRolePermissions] = useState<Record<string, string[]>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadPermissions() {
+      try {
+        const data = await apiGet<PermissionsResponse>("/permissions.php");
+        if (mounted) {
+          setRoles(data.roles);
+          setPermissions(data.permissions);
+          setRolePermissions(data.rolePermissions);
+        }
+      } catch (error) {
+        if (mounted) {
+          setErrorMessage(
+            error instanceof Error ? error.message : "Não foi possível carregar permissões."
+          );
+        }
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadPermissions();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const groupedPermissions = useMemo(() => {
+    const groups: Record<string, Permission[]> = {};
+    for (const permission of permissions) {
+      const category = permission.name.split(".")[0] || "geral";
+      if (!groups[category]) {
+        groups[category] = [];
+      }
+      groups[category].push(permission);
+    }
+    return groups;
+  }, [permissions]);
+
+  const roleColumnsClass =
+    roles.length >= 4 ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-4" : "grid-cols-1 md:grid-cols-3";
+
+  const tabsColumnsClass =
+    roles.length >= 4 ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2 md:grid-cols-3";
+
+  if (isLoading) {
+    return <p className="text-muted-foreground">Carregando permissões...</p>;
+  }
+
+  if (errorMessage) {
+    return <p className="text-destructive">{errorMessage}</p>;
+  }
+
+  if (roles.length === 0) {
+    return <p className="text-muted-foreground">Nenhum perfil encontrado.</p>;
+  }
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold mb-2">Gestão de Permissões (RBAC)</h1>
-          <p className="text-muted-foreground">
-            Configure permissões e controle de acesso por perfil
-          </p>
-        </div>
-        <Button size="lg">
+      <div className="flex items-center justify-end">
+        <Button size="lg" disabled>
           <Save className="w-4 h-4 mr-2" />
           Salvar Alterações
         </Button>
       </div>
 
-      {/* Roles Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className={`grid gap-6 ${roleColumnsClass}`}>
         {roles.map((role) => (
           <Card key={role.id} className="hover:shadow-lg transition-shadow">
             <CardContent className="pt-6">
@@ -133,156 +120,57 @@ export function PermissionsPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Users className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">
-                    {role.users} usuários
-                  </span>
+                  <span className="text-sm text-muted-foreground">{role.users} usuários</span>
                 </div>
-                <Badge variant="secondary" className={role.color}>
-                  {role.id}
-                </Badge>
+                <Badge variant="secondary">{role.id}</Badge>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Permissions Matrix */}
       <Card>
         <CardHeader>
           <CardTitle>Matriz de Permissões</CardTitle>
-          <CardDescription>
-            Configure quais ações cada perfil pode realizar
-          </CardDescription>
+          <CardDescription>Leitura baseada na configuração de roles e permissions</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="admin" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="admin">Administrador</TabsTrigger>
-              <TabsTrigger value="manager">Gestor</TabsTrigger>
-              <TabsTrigger value="user">Colaborador</TabsTrigger>
+          <Tabs defaultValue={roles[0].id} className="w-full">
+            <TabsList className={`grid w-full ${tabsColumnsClass}`}>
+              {roles.map((role) => (
+                <TabsTrigger key={role.id} value={role.id}>
+                  {role.name}
+                </TabsTrigger>
+              ))}
             </TabsList>
 
             {roles.map((role) => (
               <TabsContent key={role.id} value={role.id} className="space-y-6 mt-6">
-                {/* Dashboards */}
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-lg">Dashboards</h3>
-                  <div className="space-y-3 pl-4 border-l-2 border-primary/20">
-                    {permissions.dashboards.map((permission) => {
-                      const Icon = permission.icon;
-                      return (
-                        <div
-                          key={permission.id}
-                          className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Icon className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">
-                              {permission.name}
-                            </span>
-                          </div>
-                          <Switch
-                            defaultChecked={
-                              defaultPermissions[role.id as keyof typeof defaultPermissions][
-                                permission.id as keyof (typeof defaultPermissions)["admin"]
-                              ]
-                            }
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                {Object.entries(groupedPermissions).map(([category, categoryPermissions]) => (
+                  <div key={category} className="space-y-4">
+                    <h3 className="font-semibold text-lg capitalize">{category}</h3>
+                    <div className="space-y-3 pl-4 border-l-2 border-primary/20">
+                      {categoryPermissions.map((permission) => {
+                        const hasPermission =
+                          rolePermissions[role.id]?.includes(permission.name) ?? false;
+                        const Icon = permission.name.includes("read") ? Eye : Edit3;
 
-                {/* Users */}
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-lg">Usuários</h3>
-                  <div className="space-y-3 pl-4 border-l-2 border-primary/20">
-                    {permissions.users.map((permission) => {
-                      const Icon = permission.icon;
-                      return (
-                        <div
-                          key={permission.id}
-                          className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Icon className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">
-                              {permission.name}
-                            </span>
+                        return (
+                          <div
+                            key={`${role.id}-${permission.id}`}
+                            className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Icon className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-sm font-medium">{permission.description}</span>
+                            </div>
+                            <Switch checked={hasPermission} disabled />
                           </div>
-                          <Switch
-                            defaultChecked={
-                              defaultPermissions[role.id as keyof typeof defaultPermissions][
-                                permission.id as keyof (typeof defaultPermissions)["admin"]
-                              ]
-                            }
-                          />
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-
-                {/* AI */}
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-lg">Assistente IA</h3>
-                  <div className="space-y-3 pl-4 border-l-2 border-primary/20">
-                    {permissions.ai.map((permission) => {
-                      const Icon = permission.icon;
-                      return (
-                        <div
-                          key={permission.id}
-                          className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Icon className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">
-                              {permission.name}
-                            </span>
-                          </div>
-                          <Switch
-                            defaultChecked={
-                              defaultPermissions[role.id as keyof typeof defaultPermissions][
-                                permission.id as keyof (typeof defaultPermissions)["admin"]
-                              ]
-                            }
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Settings */}
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-lg">Configurações</h3>
-                  <div className="space-y-3 pl-4 border-l-2 border-primary/20">
-                    {permissions.settings.map((permission) => {
-                      const Icon = permission.icon;
-                      return (
-                        <div
-                          key={permission.id}
-                          className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Icon className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">
-                              {permission.name}
-                            </span>
-                          </div>
-                          <Switch
-                            defaultChecked={
-                              defaultPermissions[role.id as keyof typeof defaultPermissions][
-                                permission.id as keyof (typeof defaultPermissions)["admin"]
-                              ]
-                            }
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                ))}
               </TabsContent>
             ))}
           </Tabs>

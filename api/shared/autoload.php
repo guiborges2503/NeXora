@@ -12,5 +12,15 @@ spl_autoload_register(function ($class) {
         if (file_exists($file)) {
             require $file;
         }
+        return;
+    }
+
+    if (strpos($class, 'App\\') === 0) {
+        $relativeClass = substr($class, 4);
+        $file = __DIR__ . '/../app/' . str_replace('\\', '/', $relativeClass) . '.php';
+
+        if (file_exists($file)) {
+            require $file;
+        }
     }
 });

@@ -21,13 +21,26 @@ class Request
 
     private function parseBody(): void
     {
-        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+        $contentType = $_SERVER['CONTENT_TYPE'] ?? ($_SERVER['HTTP_CONTENT_TYPE'] ?? '');
+        $input = file_get_contents('php://input');
 
         if (strpos($contentType, 'application/json') !== false) {
-            $input = file_get_contents('php://input');
             $this->body = json_decode($input, true) ?? [];
-        } else {
+            return;
+        }
+
+        if (is_string($input) && trim($input) !== '') {
+            $decoded = json_decode($input, true);
+            if (is_array($decoded)) {
+                $this->body = $decoded;
+                return;
+            }
+        }
+
+        if (!empty($_POST)) {
             $this->body = $_POST;
+        } else {
+            $this->body = [];
         }
     }
 
