@@ -157,6 +157,13 @@ export function Topbar({ onMenuClick }: TopbarProps) {
       };
     }
 
+    if (pathname === "/settings/openrouter") {
+      return {
+        title: "Configuração da API OpenRouter",
+        description: "Defina sua chave e o modelo padrão para chamadas à API OpenRouter",
+      };
+    }
+
     if (pathname === "/settings/profile") {
       return {
         title: "Meu Perfil",

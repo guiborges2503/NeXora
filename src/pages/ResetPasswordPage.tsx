@@ -1,8 +1,9 @@
-import { type FormEvent, useState } from "react";
-import { Link } from "react-router";
+import { type FormEvent, useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Eye, EyeOff } from "lucide-react";
 import logoImg from "@/img/logo.png";
 import logotipoImg from "@/img/logotipo.png";
 import { API_BASE_URL } from "@/config/api";
@@ -13,11 +14,24 @@ type ApiJson = {
   errors?: Record<string, string>;
 };
 
-export function ForgotPasswordPage() {
-  const [email, setEmail] = useState("");
+export function ResetPasswordPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [token, setToken] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const raw = (searchParams.get("token") ?? "").trim().toLowerCase();
+    setToken(raw);
+    if (raw && !/^[a-f0-9]{64}$/.test(raw)) {
+      setErrorMessage("Link de recuperação inválido. Solicite um novo e-mail.");
+    }
+  }, [searchParams]);
 
   function isHttpsOrLocalApi(baseUrl: string): boolean {
     try {
@@ -34,14 +48,18 @@ export function ForgotPasswordPage() {
     setErrorMessage("");
     setSuccessMessage("");
 
-    const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail) {
-      setErrorMessage("Informe seu e-mail para recuperar a senha.");
+    if (!/^[a-f0-9]{64}$/.test(token)) {
+      setErrorMessage("Link de recuperação inválido. Solicite um novo e-mail.");
       return;
     }
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
-      setErrorMessage("Informe um e-mail válido.");
+    if (password.length < 6) {
+      setErrorMessage("A nova senha deve ter ao menos 6 caracteres.");
+      return;
+    }
+
+    if (password !== confirm) {
+      setErrorMessage("A confirmação da senha não confere.");
       return;
     }
 
@@ -52,31 +70,24 @@ export function ForgotPasswordPage() {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/auth_forgot_password.php`, {
+      const response = await fetch(`${API_BASE_URL}/auth_reset_password.php`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         cache: "no-store",
         referrerPolicy: "no-referrer",
-        body: JSON.stringify({ email: normalizedEmail }),
+        body: JSON.stringify({ token, password }),
       });
 
       const result = (await response.json()) as ApiJson;
-
       if (!response.ok || !result.success) {
-        if (result.errors) {
-          const first = Object.values(result.errors)[0];
-          setErrorMessage(first ?? result.message ?? "Não foi possível enviar o e-mail.");
-        } else {
-          setErrorMessage(result.message ?? "Não foi possível enviar o e-mail.");
-        }
+        setErrorMessage(result.message ?? "Não foi possível redefinir a senha.");
         return;
       }
 
-      setSuccessMessage(
-        result.message ??
-          "Se o e-mail existir em nossa base, você receberá instruções para redefinir a senha."
-      );
-      setEmail("");
+      setSuccessMessage(result.message ?? "Senha alterada. Redirecionando para o login…");
+      setPassword("");
+      setConfirm("");
+      setTimeout(() => navigate("/auth/login"), 2000);
     } catch {
       setErrorMessage("Não foi possível conectar ao servidor.");
     } finally {
@@ -94,23 +105,48 @@ export function ForgotPasswordPage() {
 
           <div className="space-y-6">
             <div className="space-y-2">
-              <h2 className="text-3xl font-semibold tracking-tight">Recuperar senha</h2>
+              <h2 className="text-3xl font-semibold tracking-tight">Nova senha</h2>
               <p className="text-muted-foreground">
-                Informe seu e-mail para receber as instruções de redefinição.
+                Defina uma nova senha para a sua conta.
               </p>
             </div>
 
             <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="space-y-2">
-                <Label htmlFor="email">E-mail</Label>
+                <Label htmlFor="password">Nova senha</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    className="bg-input-background border-border pr-10"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="new-password"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-9 w-9 text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirm">Confirmar senha</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="seu@email.com"
+                  id="confirm"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
                   className="bg-input-background border-border"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  autoComplete="email"
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  autoComplete="new-password"
                 />
               </div>
 
@@ -118,7 +154,7 @@ export function ForgotPasswordPage() {
               {successMessage ? <p className="text-sm text-emerald-600">{successMessage}</p> : null}
 
               <Button className="w-full" size="lg" type="submit" disabled={isLoading}>
-                {isLoading ? "Enviando..." : "Enviar instruções"}
+                {isLoading ? "Salvando..." : "Salvar nova senha"}
               </Button>
             </form>
 
@@ -136,9 +172,9 @@ export function ForgotPasswordPage() {
           <div className="flex items-center justify-center mx-auto">
             <img src={logotipoImg} alt="NeXora" className="w-80 max-w-full object-contain" />
           </div>
-          <h3 className="text-3xl font-semibold">Acesso seguro e rápido</h3>
+          <h3 className="text-3xl font-semibold">Segurança em primeiro lugar</h3>
           <p className="text-lg text-muted-foreground">
-            A recuperação de senha foi projetada para manter sua conta protegida.
+            Use uma senha forte e exclusiva para esta conta.
           </p>
         </div>
       </div>
