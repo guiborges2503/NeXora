@@ -10,6 +10,7 @@ import {
   Shield,
   FileText,
   Building2,
+  KeyRound,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
@@ -37,6 +38,7 @@ const configSubItems = [
   { icon: Shield, label: "Permissões", path: "/permissions" },
   { icon: FileText, label: "Auditoria", path: "/audit" },
   { icon: Building2, label: "Empresa", path: "/settings/company" },
+  { icon: KeyRound, label: "OpenRouter", path: "/settings/openrouter" },
 ];
 
 const mainMenuItems = [

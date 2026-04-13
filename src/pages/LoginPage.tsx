@@ -1,10 +1,12 @@
 import { type FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router";
+import { Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import logoImg from "@/img/logo.png";
 import logotipoImg from "@/img/logotipo.png";
+import { API_BASE_URL } from "@/config/api";
 
 type LoginApiResponse = {
   success: boolean;
@@ -23,10 +25,9 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api";
 
   function isHttpsOrLocalApi(baseUrl: string): boolean {
     try {
@@ -48,7 +49,7 @@ export function LoginPage() {
       return;
     }
 
-    if (!isHttpsOrLocalApi(apiBaseUrl)) {
+    if (!isHttpsOrLocalApi(API_BASE_URL)) {
       setErrorMessage("Por segurança, o login em produção exige API com HTTPS.");
       return;
     }
@@ -56,7 +57,7 @@ export function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${apiBaseUrl}/auth_login.php`, {
+      const response = await fetch(`${API_BASE_URL}/auth_login.php`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -132,15 +133,27 @@ export function LoginPage() {
                     Esqueceu a senha?
                   </Link>
                 </div>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  className="bg-input-background border-border"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  autoComplete="current-password"
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    className="bg-input-background border-border pr-10"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    autoComplete="current-password"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-9 w-9 text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
               </div>
 
               {errorMessage ? (

@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Maximize2, Bot, TrendingUp, AlertTriangle, Info, ArrowLeft, Star } from "lucide-react";
+import { Maximize2, Bot, TrendingUp, AlertTriangle, Info, ArrowLeft, Star, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { isOpenRouterConfigured, openRouterChatCompletion } from "@/config/openRouter";
 import { apiGet, apiPatch } from "@/config/api";
 import {
   addDashboardFavorite,
@@ -31,6 +33,14 @@ type DashboardDetail = {
   views_count: number;
 };
 
+type StaticInsight = {
+  type: "positive" | "warning" | "info";
+  title: string;
+  description: string;
+  icon: typeof TrendingUp;
+  color: string;
+};
+
 export function ViewDashboardPage() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -41,8 +51,35 @@ export function ViewDashboardPage() {
   const [isInsightsModalOpen, setIsInsightsModalOpen] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [aiExplanation, setAiExplanation] = useState("");
+  const [aiExplanationLoading, setAiExplanationLoading] = useState(false);
+  const [aiExplanationError, setAiExplanationError] = useState<string | null>(null);
+  const explainAbortRef = useRef<AbortController | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
+
+  const insights: StaticInsight[] = [
+    {
+      type: "positive",
+      title: "Crescimento nas vendas",
+      description: "Aumento de 23% em relação ao mês anterior",
+      icon: TrendingUp,
+      color: "text-green-600 bg-green-50",
+    },
+    {
+      type: "warning",
+      title: "Alerta de estoque",
+      description: "5 produtos com baixo estoque",
+      icon: AlertTriangle,
+      color: "text-orange-600 bg-orange-50",
+    },
+    {
+      type: "info",
+      title: "Novo mercado",
+      description: "Região Sul apresenta potencial de crescimento",
+      icon: Info,
+      color: "text-blue-600 bg-blue-50",
+    },
+  ];
 
   useEffect(() => {
     let mounted = true;
@@ -109,30 +146,6 @@ export function ViewDashboardPage() {
     };
   }, [id]);
 
-  const insights = [
-    {
-      type: "positive",
-      title: "Crescimento nas vendas",
-      description: "Aumento de 23% em relação ao mês anterior",
-      icon: TrendingUp,
-      color: "text-green-600 bg-green-50",
-    },
-    {
-      type: "warning",
-      title: "Alerta de estoque",
-      description: "5 produtos com baixo estoque",
-      icon: AlertTriangle,
-      color: "text-orange-600 bg-orange-50",
-    },
-    {
-      type: "info",
-      title: "Novo mercado",
-      description: "Região Sul apresenta potencial de crescimento",
-      icon: Info,
-      color: "text-blue-600 bg-blue-50",
-    },
-  ];
-
   const embedUrl = useMemo(() => {
     if (!dashboard?.embed_url) return "";
     return buildEmbedUrl(dashboard.embed_url, false);
@@ -166,23 +179,65 @@ export function ViewDashboardPage() {
     return map[category];
   }
 
-  function handleGenerateAiExplanation() {
+  async function handleGenerateAiExplanation() {
     if (!dashboard) return;
 
-    const summary = [
-      `Dashboard: ${dashboard.name}`,
-      `Categoria: ${categoryLabel(dashboard.category)}`,
-      `Visualizações: ${dashboard.views_count}`,
-      "",
-      "Principais pontos sugeridos pela IA:",
-      ...insights.map((insight) => `- ${insight.title}: ${insight.description}`),
-      "",
-      "Recomendação:",
-      "Priorize acompanhamento diário dos indicadores críticos e configure alertas para desvios acima de 10%.",
-    ].join("\n");
+    explainAbortRef.current?.abort();
+    const ac = new AbortController();
+    explainAbortRef.current = ac;
 
-    setAiExplanation(summary);
     setIsAiModalOpen(true);
+    setAiExplanation("");
+    setAiExplanationError(null);
+    setAiExplanationLoading(true);
+
+    if (!isOpenRouterConfigured()) {
+      setAiExplanationError(
+        "Configure a chave OpenRouter em Configurações → OpenRouter para gerar explicações com IA."
+      );
+      setAiExplanationLoading(false);
+      return;
+    }
+
+    const bullets = insights.map((i) => `- ${i.title}: ${i.description}`).join("\n");
+
+    try {
+      const text = await openRouterChatCompletion(
+        [
+          {
+            role: "system",
+            content:
+              "Você é consultor de BI da NeXora. Responda em português do Brasil com markdown leve (títulos, listas). Não invente números ou fatos não fornecidos pelo usuário.",
+          },
+          {
+            role: "user",
+            content: `Escreva um resumo executivo para gestores sobre o dashboard "${dashboard.name}" (categoria: ${categoryLabel(dashboard.category)}).
+Descrição do painel: ${dashboard.description || "—"}.
+Visualizações registradas na plataforma: ${dashboard.views_count}.
+
+Insights de apoio (exemplo ilustrativo):
+${bullets}
+
+Inclua: visão geral, recomendações práticas e o que monitorar nos próximos dias.`,
+          },
+        ],
+        { signal: ac.signal, temperature: 0.55, maxTokens: 1400 }
+      );
+      if (!ac.signal.aborted) {
+        setAiExplanation(text.trim());
+      }
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      if (!ac.signal.aborted) {
+        setAiExplanationError(
+          e instanceof Error ? e.message : "Não foi possível gerar a explicação."
+        );
+      }
+    } finally {
+      if (!ac.signal.aborted) {
+        setAiExplanationLoading(false);
+      }
+    }
   }
 
   async function handleToggleFavorite() {
@@ -248,7 +303,6 @@ export function ViewDashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <Button
@@ -293,7 +347,6 @@ export function ViewDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Dashboard Embed */}
         <div className="lg:col-span-2">
           <Card className="h-[420px] sm:h-[520px] lg:h-[600px]">
             <CardContent className="p-0 h-full">
@@ -316,7 +369,6 @@ export function ViewDashboardPage() {
           </Card>
         </div>
 
-        {/* Insights Sidebar */}
         <div>
           <Card className="min-h-[420px] sm:min-h-[520px] lg:h-[600px] flex flex-col">
             <CardHeader className="pb-4">
@@ -336,14 +388,14 @@ export function ViewDashboardPage() {
                           className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
                         >
                           <div className="flex gap-3">
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${insight.color}`}>
+                            <div
+                              className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${insight.color}`}
+                            >
                               <Icon className="w-5 h-5" />
                             </div>
                             <div className="space-y-1">
                               <p className="font-medium text-sm">{insight.title}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {insight.description}
-                              </p>
+                              <p className="text-xs text-muted-foreground">{insight.description}</p>
                             </div>
                           </div>
                         </div>
@@ -448,18 +500,45 @@ export function ViewDashboardPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isAiModalOpen} onOpenChange={setIsAiModalOpen}>
+      <Dialog
+        open={isAiModalOpen}
+        onOpenChange={(open) => {
+          setIsAiModalOpen(open);
+          if (!open) {
+            explainAbortRef.current?.abort();
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Explicação Gerada com IA</DialogTitle>
             <DialogDescription>
-              Sumário automático baseado no dashboard aberto.
+              Sumário automático baseado no dashboard aberto (OpenRouter).
             </DialogDescription>
           </DialogHeader>
 
-          <pre className="text-sm whitespace-pre-wrap bg-muted/40 border rounded-md p-3">
-            {aiExplanation}
-          </pre>
+          {aiExplanationLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-8 justify-center">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Gerando explicação…
+            </div>
+          ) : null}
+          {aiExplanationError ? (
+            <Alert variant="destructive">
+              <AlertTitle>Erro</AlertTitle>
+              <AlertDescription className="space-y-2">
+                <p>{aiExplanationError}</p>
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/settings/openrouter">Configurar OpenRouter</Link>
+                </Button>
+              </AlertDescription>
+            </Alert>
+          ) : null}
+          {aiExplanation ? (
+            <pre className="text-sm whitespace-pre-wrap bg-muted/40 border rounded-md p-3 max-h-[50vh] overflow-y-auto">
+              {aiExplanation}
+            </pre>
+          ) : null}
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAiModalOpen(false)}>

@@ -5,6 +5,7 @@ import { AuthLayout } from "@/components/layouts/AuthLayout";
 import { LoginPage } from "@/pages/LoginPage";
 import { RegisterPage } from "@/pages/RegisterPage";
 import { ForgotPasswordPage } from "@/pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
 import { HomePage } from "@/pages/HomePage";
 import { CreateCompanyPage } from "@/pages/CreateCompanyPage";
 import { CreateDashboardPage } from "@/pages/CreateDashboardPage";
@@ -14,6 +15,7 @@ import { AIAssistantPage } from "@/pages/AIAssistantPage";
 import { AlertsPage } from "@/pages/AlertsPage";
 import { AdminDashboardPage } from "@/pages/AdminDashboardPage";
 import { CompanySettingsPage } from "@/pages/CompanySettingsPage";
+import { OpenRouterSettingsPage } from "@/pages/OpenRouterSettingsPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { AuditLogsPage } from "@/pages/AuditLogsPage";
 import { PermissionsPage } from "@/pages/PermissionsPage";
@@ -48,6 +50,7 @@ export const router = createBrowserRouter([
       { path: "login", element: <LoginPage /> },
       { path: "register", element: <RegisterPage /> },
       { path: "forgot-password", element: <ForgotPasswordPage /> },
+      { path: "reset-password", element: <ResetPasswordPage /> },
       { path: "session-expired", element: <SessionExpiredPage /> },
     ],
   },
@@ -73,6 +76,7 @@ export const router = createBrowserRouter([
       { path: "alerts", element: <AlertsPage /> },
       { path: "admin", element: <AdminDashboardPage /> },
       { path: "settings/company", element: <CompanySettingsPage /> },
+      { path: "settings/openrouter", element: <OpenRouterSettingsPage /> },
       { path: "settings/profile", element: <ProfilePage /> },
       { path: "audit", element: <AuditLogsPage /> },
       { path: "permissions", element: <PermissionsPage /> },
