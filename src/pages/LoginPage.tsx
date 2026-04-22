@@ -4,9 +4,9 @@ import { Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import logoImg from "@/img/logo.png";
-import logotipoImg from "@/img/logotipo.png";
 import { API_BASE_URL } from "@/config/api";
+
+const LOGIN_BG_URL = `${import.meta.env.BASE_URL}login.png`;
 
 type LoginApiResponse = {
   success: boolean;
@@ -89,119 +89,95 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left Side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-md space-y-8">
-          {/* Logo */}
-          <div className="w-full flex justify-center">
-            <img src={logoImg} alt="NeXora" className="w-80 max-w-full object-contain" />
-          </div>
-
-          {/* Form */}
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <h2 className="text-3xl font-semibold tracking-tight">
-                Bem-vindo de volta
-              </h2>
-              <p className="text-muted-foreground">
-                Entre com suas credenciais para acessar sua conta
-              </p>
-            </div>
-
-            <form className="space-y-4" onSubmit={handleSubmit}>
-              <div className="space-y-2">
-                <Label htmlFor="email">E-mail</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="seu@email.com"
-                  className="bg-input-background border-border"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  autoComplete="email"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Senha</Label>
-                  <Link
-                    to="/auth/forgot-password"
-                    className="text-sm text-primary hover:underline"
-                  >
-                    Esqueceu a senha?
-                  </Link>
-                </div>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    className="bg-input-background border-border pr-10"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    autoComplete="current-password"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-9 w-9 text-muted-foreground hover:text-foreground"
-                    onClick={() => setShowPassword((v) => !v)}
-                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
-
-              {errorMessage ? (
-                <p className="text-sm text-destructive">{errorMessage}</p>
-              ) : null}
-
-              <Button className="w-full" size="lg" type="submit" disabled={isLoading}>
-                {isLoading ? "Entrando..." : "Entrar"}
-              </Button>
-            </form>
-
-            <div className="text-center text-sm">
-              <span className="text-muted-foreground">Não tem uma conta? </span>
-              <Link to="/auth/register" className="text-primary hover:underline font-medium">
-                Criar conta
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Right Side - Illustration */}
-      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-primary/10 via-primary/5 to-background items-center justify-center p-8">
-        <div className="max-w-lg space-y-6 text-center">
-          <div className="flex items-center justify-center mx-auto">
-            <img src={logotipoImg} alt="NeXora" className="w-80 max-w-full object-contain" />
-          </div>
-          <h3 className="text-3xl font-semibold">
-            Transforme dados em decisões inteligentes
-          </h3>
-          <p className="text-lg text-muted-foreground">
-            Plataforma completa de Business Intelligence com IA explicativa para
-            pequenas e médias empresas.
+    <div
+      className="relative flex min-h-screen items-center justify-center bg-cover bg-center bg-no-repeat p-8"
+      style={{ backgroundImage: `url(${LOGIN_BG_URL})` }}
+    >
+      <div className="relative w-full max-w-md space-y-6">
+        <div className="space-y-2 text-center">
+          <h2 className="text-3xl font-semibold tracking-tight text-balance text-white drop-shadow-sm">
+            Bem-vindo de volta
+          </h2>
+          <p className="text-balance text-white/80 drop-shadow-sm">
+            Entre com suas credenciais para acessar sua conta
           </p>
-          <div className="flex items-center justify-center gap-12 pt-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-primary">500+</div>
-              <div className="text-sm text-muted-foreground">Empresas</div>
+        </div>
+
+        {/* Painel claro só no bloco de credenciais */}
+        <div className="rounded-2xl border border-border/60 bg-background/95 p-6 shadow-2xl backdrop-blur-md">
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div className="space-y-2">
+              <Label htmlFor="email">E-mail</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="seu@email.com"
+                className="bg-input-background border-border"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                autoComplete="email"
+              />
             </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-primary">50k+</div>
-              <div className="text-sm text-muted-foreground">Dashboards</div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Senha</Label>
+                <Link
+                  to="/auth/forgot-password"
+                  className="text-sm text-primary hover:underline"
+                >
+                  Esqueceu a senha?
+                </Link>
+              </div>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  className="bg-input-background border-border pr-10"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete="current-password"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-9 w-9 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
             </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-primary">99.9%</div>
-              <div className="text-sm text-muted-foreground">Uptime</div>
-            </div>
+
+            {errorMessage ? (
+              <p className="text-sm text-destructive">{errorMessage}</p>
+            ) : null}
+
+            <Button className="w-full" size="lg" type="submit" disabled={isLoading}>
+              {isLoading ? "Entrando..." : "Entrar"}
+            </Button>
+          </form>
+        </div>
+
+        <div className="space-y-3 text-center text-sm text-white/85 drop-shadow-sm">
+          <div>
+            <span>Não tem uma conta? </span>
+            <Link
+              to="/auth/register"
+              className="font-medium text-sky-300 underline-offset-4 hover:text-sky-200 hover:underline"
+            >
+              Criar conta
+            </Link>
           </div>
+          <Link
+            to="/sobre"
+            className="block text-xs text-white/65 underline-offset-4 transition-colors hover:text-white/90 hover:underline"
+          >
+            O que é o NeXora?
+          </Link>
         </div>
       </div>
     </div>

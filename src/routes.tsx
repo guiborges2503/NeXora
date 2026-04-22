@@ -22,6 +22,7 @@ import { PermissionsPage } from "@/pages/PermissionsPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { AccessDeniedPage } from "@/pages/AccessDeniedPage";
 import { SessionExpiredPage } from "@/pages/SessionExpiredPage";
+import { AboutSystemPage } from "@/pages/AboutSystemPage";
 
 function isAuthenticated(): boolean {
   try {
@@ -53,6 +54,10 @@ export const router = createBrowserRouter([
       { path: "reset-password", element: <ResetPasswordPage /> },
       { path: "session-expired", element: <SessionExpiredPage /> },
     ],
+  },
+  {
+    path: "/sobre",
+    element: <AboutSystemPage />,
   },
   {
     path: "/",

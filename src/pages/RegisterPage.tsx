@@ -161,10 +161,18 @@ export function RegisterPage() {
               </Button>
             </form>
 
-            <div className="text-center text-sm">
-              <span className="text-muted-foreground">Já tem uma conta? </span>
-              <Link to="/auth/login" className="text-primary hover:underline font-medium">
-                Fazer login
+            <div className="space-y-3 text-center text-sm">
+              <div>
+                <span className="text-muted-foreground">Já tem uma conta? </span>
+                <Link to="/auth/login" className="font-medium text-primary hover:underline">
+                  Fazer login
+                </Link>
+              </div>
+              <Link
+                to="/sobre"
+                className="block text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              >
+                Conheça o NeXora
               </Link>
             </div>
           </div>
