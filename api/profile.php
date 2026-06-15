@@ -16,10 +16,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 try {
     $controller = new \App\Controllers\ProfileController();
     $request = new \Shared\Request();
+    $authUser = \Shared\AuthGuard::requireAuth($request);
     $method = $_SERVER['REQUEST_METHOD'];
-    $queryUserId = (int) $request->getQueryParam('user_id', 0);
-    $bodyUserId = (int) $request->getBodyParam('user_id', 0);
-    $userId = $queryUserId > 0 ? $queryUserId : $bodyUserId;
+    $userId = $authUser['id'];
 
     switch ($method) {
         case 'GET':

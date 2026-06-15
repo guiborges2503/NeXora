@@ -1,18 +1,40 @@
+import { clearAuthSession, getAuthToken } from "@/config/auth";
+
 export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api";
+  import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? "/api" : "http://localhost:8000/api");
 
 async function apiRequest<T>(
   endpoint: string,
   init?: RequestInit,
   options?: { requireData?: boolean }
 ): Promise<T> {
+  const token = getAuthToken();
+  const headers = new Headers(init?.headers);
+
+  if (!headers.has("Content-Type") && init?.body) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     cache: "no-store",
     referrerPolicy: "no-referrer",
     ...init,
+    headers,
   });
   const payload = (await response.json()) as { success: boolean; message?: string; data?: T };
   const requireData = options?.requireData ?? true;
+
+  if (response.status === 401) {
+    clearAuthSession();
+    if (typeof window !== "undefined" && !window.location.pathname.startsWith("/auth/")) {
+      window.location.assign("/auth/session-expired");
+    }
+    throw new Error(payload.message ?? "Sessão expirada");
+  }
 
   if (!response.ok || !payload.success || (requireData && payload.data === undefined)) {
     throw new Error(payload.message ?? "Falha na requisição da API");

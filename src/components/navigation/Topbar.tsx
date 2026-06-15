@@ -9,9 +9,10 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { type StoredUser, getRoleLabel, getStoredUser, getUserInitials } from "@/config/currentUser";
 import { apiGet } from "@/config/api";
+import { clearAuthSession } from "@/config/auth";
 import { isPwaMode } from "@/config/pwa";
 import { cn } from "../ui/utils";
 
@@ -36,6 +37,7 @@ type NotificationsResponse = {
 
 export function Topbar({ onMenuClick }: TopbarProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const { pathname, search } = location;
   const pwaMode = isPwaMode();
   const [user, setUser] = useState<StoredUser | null>(() => getStoredUser());
@@ -320,10 +322,14 @@ export function Topbar({ onMenuClick }: TopbarProps) {
               </>
             )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link to="/auth/login" className="text-destructive">
-                Sair
-              </Link>
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={() => {
+                clearAuthSession();
+                navigate("/auth/login");
+              }}
+            >
+              Sair
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

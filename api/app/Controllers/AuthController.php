@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Repositories\PasswordResetRepository;
 use App\Repositories\UserRepository;
 use App\Services\AuthService;
+use App\Services\JwtService;
 use App\Services\PasswordResetService;
 use App\Validators\UserValidator;
 use Shared\Database;
@@ -56,6 +57,7 @@ class AuthController
                 (string) $payload['email'],
                 (string) $payload['password']
             );
+            $user['token'] = JwtService::issue($user);
 
             return Response::success($user, 200, 'Login realizado');
         } catch (RuntimeException $e) {

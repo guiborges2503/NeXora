@@ -16,29 +16,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 try {
     $controller = new \App\Controllers\UsersController();
     $request = new \Shared\Request();
+    $authUser = \Shared\AuthGuard::requireAuth($request);
     $method = $_SERVER['REQUEST_METHOD'];
     $id = (int) ($request->getQueryParam('id', 0));
 
     switch ($method) {
         case 'GET':
+            \Shared\AuthGuard::requirePermission($authUser, 'users.read');
             $response = $controller->index();
             break;
         case 'POST':
+            \Shared\AuthGuard::requirePermission($authUser, 'users.write');
             $response = $controller->store($request);
             break;
         case 'PUT':
+            \Shared\AuthGuard::requirePermission($authUser, 'users.write');
             if ($id <= 0) {
                 \Shared\Response::validationError(['id' => 'Parâmetro id é obrigatório'])->send();
             }
             $response = $controller->update($id, $request);
             break;
         case 'PATCH':
+            \Shared\AuthGuard::requirePermission($authUser, 'users.write');
             if ($id <= 0) {
                 \Shared\Response::validationError(['id' => 'Parâmetro id é obrigatório'])->send();
             }
             $response = $controller->updateStatus($id, $request);
             break;
         case 'DELETE':
+            \Shared\AuthGuard::requirePermission($authUser, 'users.write');
             if ($id <= 0) {
                 \Shared\Response::validationError(['id' => 'Parâmetro id é obrigatório'])->send();
             }

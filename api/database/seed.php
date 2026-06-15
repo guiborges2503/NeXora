@@ -152,6 +152,79 @@ try {
     }
 
     echo "Seed finalizado com sucesso." . PHP_EOL;
+
+    $customersCount = (int) $db->query('SELECT COUNT(*) FROM customers')->fetchColumn();
+    if ($customersCount === 0) {
+        $insertCustomer = $db->prepare(
+            "INSERT INTO customers (name, segment, region_id, created_at)
+             VALUES (:name, :segment, (SELECT id FROM regions WHERE code = :code LIMIT 1), :created_at)"
+        );
+
+        $sampleCustomers = [
+            ['TechNova Ltda', 'enterprise', 'SE'],
+            ['Comercial Alfa', 'pme', 'SUL'],
+            ['Distribuidora Beta', 'pme', 'NE'],
+            ['Indústria Gama', 'enterprise', 'CO'],
+            ['Varejo Delta', 'geral', 'N'],
+            ['Serviços Omega', 'pme', 'SE'],
+        ];
+
+        foreach ($sampleCustomers as $customer) {
+            $insertCustomer->execute([
+                'name' => $customer[0],
+                'segment' => $customer[1],
+                'code' => $customer[2],
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
+
+        echo "[OK] Clientes de exemplo criados" . PHP_EOL;
+    }
+
+    $salesCount = (int) $db->query('SELECT COUNT(*) FROM sales')->fetchColumn();
+    if ($salesCount === 0) {
+        $insertSale = $db->prepare(
+            "INSERT INTO sales (
+                sale_date, customer_id, product_id, region_id,
+                quantity, unit_price, total_amount, seller_name, created_at
+             )
+             SELECT
+                :sale_date,
+                (SELECT id FROM customers ORDER BY id LIMIT 1 OFFSET :customer_offset),
+                (SELECT id FROM products ORDER BY id LIMIT 1 OFFSET :product_offset),
+                (SELECT id FROM regions WHERE code = :region_code LIMIT 1),
+                :quantity,
+                (SELECT unit_price FROM products ORDER BY id LIMIT 1 OFFSET :product_offset),
+                :total_amount,
+                :seller_name,
+                :created_at"
+        );
+
+        $sellers = ['Ana Souza', 'Bruno Lima', 'Carla Mendes', 'Diego Rocha', 'Elena Pires'];
+        $regions = ['SUL', 'SE', 'NE', 'CO', 'N'];
+
+        for ($i = 0; $i < 40; $i++) {
+            $quantity = rand(1, 5);
+            $productOffset = $i % 7;
+            $unitPriceStmt = $db->prepare('SELECT unit_price FROM products ORDER BY id LIMIT 1 OFFSET :offset');
+            $unitPriceStmt->execute(['offset' => $productOffset]);
+            $unitPrice = (float) $unitPriceStmt->fetchColumn();
+            $total = round($unitPrice * $quantity, 2);
+
+            $insertSale->execute([
+                'sale_date' => date('Y-m-d', strtotime('-' . rand(1, 180) . ' days')),
+                'customer_offset' => $i % 6,
+                'product_offset' => $productOffset,
+                'region_code' => $regions[$i % count($regions)],
+                'quantity' => $quantity,
+                'total_amount' => $total,
+                'seller_name' => $sellers[$i % count($sellers)],
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
+
+        echo "[OK] Vendas de exemplo criadas" . PHP_EOL;
+    }
 } catch (Throwable $e) {
     fwrite(STDERR, "[ERRO] " . $e->getMessage() . PHP_EOL);
     exit(1);

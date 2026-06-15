@@ -9,7 +9,10 @@ import { ResetPasswordPage } from "@/pages/ResetPasswordPage";
 import { HomePage } from "@/pages/HomePage";
 import { CreateCompanyPage } from "@/pages/CreateCompanyPage";
 import { CreateDashboardPage } from "@/pages/CreateDashboardPage";
+import { CreateAiReportPage } from "@/pages/CreateAiReportPage";
 import { ViewDashboardPage } from "@/pages/ViewDashboardPage";
+import { ViewAiReportPage } from "@/pages/ViewAiReportPage";
+import { EditAiReportPage } from "@/pages/EditAiReportPage";
 import { UsersManagementPage } from "@/pages/UsersManagementPage";
 import { AIAssistantPage } from "@/pages/AIAssistantPage";
 import { AlertsPage } from "@/pages/AlertsPage";
@@ -23,6 +26,7 @@ import { NotFoundPage } from "@/pages/NotFoundPage";
 import { AccessDeniedPage } from "@/pages/AccessDeniedPage";
 import { SessionExpiredPage } from "@/pages/SessionExpiredPage";
 import { AboutSystemPage } from "@/pages/AboutSystemPage";
+import { hasAuthSession } from "@/config/auth";
 
 function isAuthenticated(): boolean {
   try {
@@ -30,7 +34,7 @@ function isAuthenticated(): boolean {
     if (!rawUser) return false;
 
     const user = JSON.parse(rawUser) as { authenticated?: boolean };
-    return user.authenticated === true;
+    return user.authenticated === true && hasAuthSession();
   } catch {
     return false;
   }
@@ -75,7 +79,10 @@ export const router = createBrowserRouter([
       { path: "dashboards", element: <HomePage /> },
       { path: "company/create", element: <CreateCompanyPage /> },
       { path: "dashboards/create", element: <CreateDashboardPage /> },
+      { path: "reports/create", element: <CreateAiReportPage /> },
+      { path: "reports/:id/edit", element: <EditAiReportPage /> },
       { path: "dashboards/:id", element: <ViewDashboardPage /> },
+      { path: "reports/:id", element: <ViewAiReportPage /> },
       { path: "users", element: <UsersManagementPage /> },
       { path: "ai-assistant", element: <AIAssistantPage /> },
       { path: "alerts", element: <AlertsPage /> },
