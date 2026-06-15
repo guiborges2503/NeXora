@@ -38,7 +38,10 @@ class DashboardsController
         $embedUrl = trim((string) ($payload['embed_url'] ?? ''));
         $category = trim((string) ($payload['category'] ?? 'other'));
         $isPublic = !empty($payload['is_public']) ? 1 : 0;
-        $ownerId = (int) ($payload['owner_id'] ?? 0);
+        $ownerId = $request->getAuthUserId();
+        if ($ownerId <= 0) {
+            $ownerId = (int) ($payload['owner_id'] ?? 0);
+        }
         $allowedRoles = is_array($payload['allowed_roles'] ?? null) ? $payload['allowed_roles'] : [];
 
         $errors = $this->validatePayload($name, $embedUrl, $category, $allowedRoles);

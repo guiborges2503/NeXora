@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, TrendingUp, Users, DollarSign, Package, MoreVertical, Star } from "lucide-react";
+import { Plus, Search, TrendingUp, Users, DollarSign, Package, MoreVertical, Star, Sparkles } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +19,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { apiDelete, apiGet, apiPost } from "@/config/api";
+import { fetchAiReports, type AiReportListItem } from "@/config/aiReportsApi";
 import { getCurrentUserId, listFavoriteDashboardIds } from "@/config/favorites";
+import { getStoredUser } from "@/config/currentUser";
 
 type DashboardItem = {
   id: number;
@@ -32,6 +34,8 @@ type DashboardItem = {
   owner_id?: number;
   updated_at: string;
   views_count: number;
+  report_type?: "powerbi" | "ai_report";
+  chart_type?: string;
 };
 
 export function HomePage() {
@@ -49,8 +53,31 @@ export function HomePage() {
   async function loadDashboards() {
     setErrorMessage("");
     try {
-      const data = await apiGet<DashboardItem[]>("/dashboards.php");
-      setDashboards(data.map((item) => ({ ...item, id: Number(item.id) })));
+      const [dashboardData, aiReportData] = await Promise.all([
+        apiGet<Omit<DashboardItem, "report_type">[]>("/dashboards.php"),
+        fetchAiReports().catch(() => [] as AiReportListItem[]),
+      ]);
+
+      const powerBiItems: DashboardItem[] = dashboardData.map((item) => ({
+        ...item,
+        id: Number(item.id),
+        report_type: "powerbi",
+      }));
+
+      const aiItems: DashboardItem[] = aiReportData.map((item) => ({
+        id: Number(item.id),
+        name: item.name,
+        description: item.description,
+        category: item.category as DashboardItem["category"],
+        owner_id: item.owner_id,
+        is_public: item.is_public,
+        updated_at: item.updated_at,
+        views_count: item.views_count,
+        report_type: "ai_report",
+        chart_type: item.chart_type,
+      }));
+
+      setDashboards([...powerBiItems, ...aiItems]);
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "Não foi possível carregar dashboards."
@@ -178,33 +205,49 @@ export function HomePage() {
     }
   }
 
-  async function handleDeleteDashboard(id: number) {
-    const confirmed = window.confirm("Deseja excluir este dashboard?");
+  async function handleDeleteDashboard(id: number, reportType: DashboardItem["report_type"]) {
+    const confirmed = window.confirm("Deseja excluir este item?");
     if (!confirmed) return;
 
     try {
-      await apiDelete<{ message?: string }>(`/dashboards.php?id=${id}`);
-      setSuccessMessage("Dashboard excluído com sucesso.");
+      if (reportType === "ai_report") {
+        await apiDelete<{ message?: string }>(`/ai_reports.php?id=${id}`);
+      } else {
+        await apiDelete<{ message?: string }>(`/dashboards.php?id=${id}`);
+      }
+      setSuccessMessage(
+        reportType === "ai_report" ? "Relatório excluído com sucesso." : "Dashboard excluído com sucesso."
+      );
       await loadDashboards();
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Não foi possível excluir o dashboard."
-      );
+      setErrorMessage(error instanceof Error ? error.message : "Não foi possível excluir o item.");
     }
   }
 
-  async function handleShareDashboard(id: number) {
-    const url = `${window.location.origin}/dashboards/${id}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      setSuccessMessage("Link do dashboard copiado para a área de transferência.");
-    } catch {
-      setErrorMessage("Não foi possível copiar o link automaticamente.");
-    }
+  function handleShareDashboard(id: number, reportType: DashboardItem["report_type"]) {
+    const path = reportType === "ai_report" ? `/reports/${id}` : `/dashboards/${id}`;
+    const url = `${window.location.origin}${path}`;
+    void navigator.clipboard.writeText(url).then(
+      () => setSuccessMessage("Link copiado para a área de transferência."),
+      () => setErrorMessage("Não foi possível copiar o link automaticamente.")
+    );
   }
 
-  function handleEditDashboard(id: number) {
+  function handleEditDashboard(id: number, reportType: DashboardItem["report_type"], ownerId?: number) {
+    if (reportType === "ai_report") {
+      const currentUserId = getCurrentUserId();
+      const currentRole = getStoredUser()?.role ?? "viewer";
+      const canEdit = ownerId === currentUserId || currentRole === "admin";
+      navigate(canEdit ? `/reports/${id}/edit` : `/reports/${id}`);
+      return;
+    }
     navigate(`/dashboards/create?id=${id}`);
+  }
+
+  function canEditAiReport(ownerId?: number): boolean {
+    const currentUserId = getCurrentUserId();
+    const currentRole = getStoredUser()?.role ?? "viewer";
+    return ownerId === currentUserId || currentRole === "admin";
   }
 
   async function handleDuplicateDashboard(id: number) {
@@ -258,6 +301,12 @@ export function HomePage() {
             onClick={() => setShowAllDashboards((current) => !current)}
           >
             Todos os Painéis
+          </Button>
+          <Button asChild size="lg" variant="outline">
+            <Link to="/reports/create">
+              <Sparkles className="w-4 h-4 mr-2" />
+              Relatório IA
+            </Link>
           </Button>
           <Button asChild size="lg">
             <Link to="/dashboards/create">
@@ -325,12 +374,14 @@ export function HomePage() {
         {filteredDashboards.map((dashboard) => {
           const Icon = getDashboardIcon(dashboard.category);
           const color = getDashboardColor(dashboard.category);
-          const previewUrl = buildPreviewEmbedUrl(dashboard.embed_url);
-          const isPowerBiPreview = Boolean(dashboard.embed_url?.includes("powerbi.com"));
+          const isAiReport = dashboard.report_type === "ai_report";
+          const previewUrl = isAiReport ? "" : buildPreviewEmbedUrl(dashboard.embed_url);
+          const isPowerBiPreview = Boolean(!isAiReport && dashboard.embed_url?.includes("powerbi.com"));
           const isFavorite = favoriteDashboardIds.includes(dashboard.id);
+          const viewPath = isAiReport ? `/reports/${dashboard.id}` : `/dashboards/${dashboard.id}`;
           return (
             <Card
-              key={dashboard.id}
+              key={`${dashboard.report_type ?? "powerbi"}-${dashboard.id}`}
               className="relative overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group"
             >
               {previewUrl ? (
@@ -345,6 +396,8 @@ export function HomePage() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/45 to-black/75 backdrop-blur-[1px]" />
                 </>
+              ) : isAiReport ? (
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-700 via-violet-800 to-slate-900" />
               ) : (
                 <div className="absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-900" />
               )}
@@ -361,24 +414,31 @@ export function HomePage() {
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onSelect={() => handleEditDashboard(dashboard.id)}>
-                        Editar
+                      <DropdownMenuItem
+                        onSelect={() => handleEditDashboard(dashboard.id, dashboard.report_type, dashboard.owner_id)}
+                      >
+                        {isAiReport ? (canEditAiReport(dashboard.owner_id) ? "Editar" : "Abrir") : "Editar"}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onSelect={() => {
-                          void handleShareDashboard(dashboard.id);
+                          handleShareDashboard(dashboard.id, dashboard.report_type);
                         }}
                       >
                         Compartilhar
                       </DropdownMenuItem>
+                      {!isAiReport ? (
+                        <DropdownMenuItem
+                          onSelect={() => {
+                            void handleDuplicateDashboard(dashboard.id);
+                          }}
+                        >
+                          Duplicar
+                        </DropdownMenuItem>
+                      ) : null}
                       <DropdownMenuItem
-                        onSelect={() => {
-                          void handleDuplicateDashboard(dashboard.id);
-                        }}
+                        variant="destructive"
+                        onSelect={() => void handleDeleteDashboard(dashboard.id, dashboard.report_type)}
                       >
-                        Duplicar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem variant="destructive" onSelect={() => void handleDeleteDashboard(dashboard.id)}>
                         Excluir
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -392,6 +452,12 @@ export function HomePage() {
                     <Badge variant="secondary" className="text-xs bg-white/20 text-white border border-white/25">
                       {getCategoryLabel(dashboard.category)}
                     </Badge>
+                    {isAiReport ? (
+                      <Badge variant="secondary" className="text-xs bg-violet-500/90 text-white border border-violet-300/60">
+                        <Sparkles className="w-3 h-3 mr-1" />
+                        Relatório IA
+                      </Badge>
+                    ) : null}
                     {isFavorite ? (
                       <Badge variant="secondary" className="text-xs bg-amber-500/90 text-white border border-amber-300/60">
                         <Star className="w-3 h-3 mr-1 fill-current" />
@@ -407,7 +473,7 @@ export function HomePage() {
               </CardContent>
               <CardFooter className="relative z-10 pt-0">
                 <Button asChild className="w-full bg-white text-slate-900 hover:bg-white/90" size="sm">
-                  <Link to={`/dashboards/${dashboard.id}`}>Visualizar</Link>
+                  <Link to={viewPath}>Visualizar</Link>
                 </Button>
               </CardFooter>
             </Card>

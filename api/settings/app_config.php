@@ -24,13 +24,15 @@ function getEnvironment()
 $environment = getEnvironment();
 
 if ($environment === 'development') {
-    define('FRONTEND_BASE_URL', 'http://localhost:5173');
+    define('FRONTEND_BASE_URL', 'http://127.0.0.1:5173');
     define('CORS_ALLOWED_ORIGINS', [
+        'http://127.0.0.1:5173',
         'http://localhost:5173',
-        'http://localhost:3000',
+        'http://127.0.0.1:5174',
         'http://localhost:5174',
+        'http://localhost:3000',
     ]);
-    define('CORS_FALLBACK_ORIGIN', 'http://localhost:5173');
+    define('CORS_FALLBACK_ORIGIN', 'http://127.0.0.1:5173');
     define('DEBUG_MODE', true);
 } else {
     define('FRONTEND_BASE_URL', 'https://tcc.example.com');

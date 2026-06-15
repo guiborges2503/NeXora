@@ -10,6 +10,7 @@ import {
   Shield,
   FileText,
   Building2,
+  Sparkles,
   KeyRound,
   ChevronLeft,
   ChevronRight,
@@ -19,6 +20,7 @@ import {
 import logoImg from "@/img/logo.png";
 import logotipoImg from "@/img/logotipo.png";
 import { isFocusedPwaRoute, isPwaMode } from "@/config/pwa";
+import { clearAuthSession } from "@/config/auth";
 import { cn } from "../ui/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
 import {
@@ -43,6 +45,7 @@ const configSubItems = [
 
 const mainMenuItems = [
   { icon: LayoutDashboard, label: "Dashboards", path: "/dashboards" },
+  { icon: Sparkles, label: "Relatórios IA", path: "/reports/create" },
   { icon: Bot, label: "Assistente IA", path: "/ai-assistant" },
   { icon: Bell, label: "Alertas", path: "/alerts" },
   { icon: BarChart3, label: "Analytics", path: "/admin" },
@@ -193,7 +196,10 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
           )
         )}
         <button
-          onClick={() => navigate("/auth/login")}
+          onClick={() => {
+            clearAuthSession();
+            navigate("/auth/login");
+          }}
           className={cn(
             "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors w-full",
             "text-muted-foreground hover:bg-accent hover:text-accent-foreground"

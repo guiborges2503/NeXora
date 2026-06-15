@@ -14,25 +14,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 try {
     $controller = new \App\Controllers\AiConversationsController();
     $request = new \Shared\Request();
+    $authUser = \Shared\AuthGuard::requireAuth($request);
     $method = $_SERVER['REQUEST_METHOD'];
     $id = (int) ($request->getQueryParam('id', 0));
+    $userId = $authUser['id'];
 
     switch ($method) {
         case 'GET':
             if ($id > 0) {
-                $response = $controller->show($id, $request);
+                $response = $controller->show($id, $userId);
             } else {
-                $response = $controller->index($request);
+                $response = $controller->index($userId);
             }
             break;
         case 'POST':
-            $response = $controller->store($request);
+            $response = $controller->store($request, $userId);
             break;
         case 'PATCH':
             if ($id <= 0) {
                 \Shared\Response::validationError(['id' => 'Parâmetro id é obrigatório'])->send();
             }
-            $response = $controller->update($id, $request);
+            $response = $controller->update($id, $request, $userId);
             break;
         default:
             \Shared\Response::error('Método não permitido', 405)->send();

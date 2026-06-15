@@ -16,6 +16,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 }
 
 try {
+    $request = new \Shared\Request();
+    $authUser = \Shared\AuthGuard::requireAuth($request);
+    \Shared\AuthGuard::requirePermission($authUser, 'audit.read');
+
     $db = \Shared\Database::getInstance()->getConnection();
 
     $stmt = $db->query(

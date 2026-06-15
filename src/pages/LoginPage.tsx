@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { API_BASE_URL } from "@/config/api";
+import { setAuthToken } from "@/config/auth";
 
 const LOGIN_BG_URL = `${import.meta.env.BASE_URL}login.png`;
 
@@ -18,6 +19,7 @@ type LoginApiResponse = {
     status: string;
     role?: "admin" | "manager" | "viewer";
     authenticated: boolean;
+    token?: string;
   };
 };
 
@@ -31,7 +33,9 @@ export function LoginPage() {
 
   function isHttpsOrLocalApi(baseUrl: string): boolean {
     try {
-      const parsedUrl = new URL(baseUrl);
+      const parsedUrl = baseUrl.startsWith("/")
+        ? new URL(baseUrl, window.location.origin)
+        : new URL(baseUrl);
       const isLocalHost = ["localhost", "127.0.0.1", "::1"].includes(parsedUrl.hostname);
       return parsedUrl.protocol === "https:" || isLocalHost;
     } catch {
@@ -72,12 +76,14 @@ export function LoginPage() {
 
       const result = (await response.json()) as LoginApiResponse;
 
-      if (!response.ok || !result.success || !result.data?.authenticated) {
+      if (!response.ok || !result.success || !result.data?.authenticated || !result.data.token) {
         setErrorMessage(result.message ?? "Credenciais inválidas.");
         return;
       }
 
-      localStorage.setItem("nexora_user", JSON.stringify(result.data));
+      setAuthToken(result.data.token);
+      const { token: _token, ...userWithoutToken } = result.data;
+      localStorage.setItem("nexora_user", JSON.stringify(userWithoutToken));
       setPassword("");
       navigate("/dashboards");
     } catch (_error) {

@@ -11,6 +11,8 @@ class Request
     private array $queryParams = [];
     private array $headers = [];
     private ?int $userId = null;
+    /** @var array{id:int,email:string,role:string}|null */
+    private ?array $authUser = null;
 
     public function __construct()
     {
@@ -61,6 +63,15 @@ class Request
                 }
             }
         }
+
+        if (!isset($this->headers['Authorization']) && !isset($this->headers['authorization'])) {
+            $authorization = $_SERVER['HTTP_AUTHORIZATION']
+                ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION']
+                ?? null;
+            if (is_string($authorization) && $authorization !== '') {
+                $this->headers['Authorization'] = $authorization;
+            }
+        }
     }
 
     public function getBody(): array
@@ -100,12 +111,41 @@ class Request
 
     public function getHeader(string $key, ?string $default = null): ?string
     {
-        return $this->headers[$key] ?? $default;
+        $target = strtolower($key);
+        foreach ($this->headers as $name => $value) {
+            if (strtolower((string) $name) === $target) {
+                return is_string($value) ? $value : (string) $value;
+            }
+        }
+
+        return $default;
     }
 
     public function getUserId(): ?int
     {
         return $this->userId;
+    }
+
+    /**
+     * @param array{id:int,email:string,role:string} $user
+     */
+    public function setAuthUser(array $user): void
+    {
+        $this->authUser = $user;
+        $this->userId = (int) $user['id'];
+    }
+
+    /**
+     * @return array{id:int,email:string,role:string}|null
+     */
+    public function getAuthUser(): ?array
+    {
+        return $this->authUser;
+    }
+
+    public function getAuthUserId(): int
+    {
+        return (int) ($this->authUser['id'] ?? 0);
     }
 
     public function isGet(): bool

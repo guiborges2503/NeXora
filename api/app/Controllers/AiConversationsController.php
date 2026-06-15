@@ -12,11 +12,10 @@ class AiConversationsController
     private const MAX_MESSAGES_JSON_BYTES = 512000;
     private const MAX_TITLE_LEN = 200;
 
-    public function index(Request $request): Response
+    public function index(int $userId): Response
     {
-        $userId = (int) $request->getQueryParam('user_id', 0);
         if ($userId <= 0) {
-            return Response::validationError(['user_id' => 'Parâmetro user_id é obrigatório']);
+            return Response::validationError(['user_id' => 'Usuário autenticado inválido']);
         }
 
         $db = Database::getInstance()->getConnection();
@@ -26,11 +25,10 @@ class AiConversationsController
         return Response::success($items);
     }
 
-    public function show(int $id, Request $request): Response
+    public function show(int $id, int $userId): Response
     {
-        $userId = (int) $request->getQueryParam('user_id', 0);
         if ($userId <= 0) {
-            return Response::validationError(['user_id' => 'Parâmetro user_id é obrigatório']);
+            return Response::validationError(['user_id' => 'Usuário autenticado inválido']);
         }
 
         $db = Database::getInstance()->getConnection();
@@ -43,10 +41,10 @@ class AiConversationsController
         return Response::success($row);
     }
 
-    public function store(Request $request): Response
+    public function store(Request $request, int $authUserId): Response
     {
         $payload = $request->getBody();
-        $userId = (int) ($payload['user_id'] ?? 0);
+        $userId = $authUserId;
         $title = trim((string) ($payload['title'] ?? ''));
         $messages = $payload['messages'] ?? null;
 
@@ -72,12 +70,12 @@ class AiConversationsController
         return Response::success($created, 201, 'Conversa criada');
     }
 
-    public function update(int $id, Request $request): Response
+    public function update(int $id, Request $request, int $authUserId): Response
     {
         $payload = $request->getBody();
-        $userId = (int) ($payload['user_id'] ?? 0);
+        $userId = $authUserId;
         if ($userId <= 0) {
-            return Response::validationError(['user_id' => 'user_id é obrigatório no corpo']);
+            return Response::validationError(['user_id' => 'Usuário autenticado inválido']);
         }
 
         $db = Database::getInstance()->getConnection();

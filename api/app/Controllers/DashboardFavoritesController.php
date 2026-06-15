@@ -26,10 +26,10 @@ class DashboardFavoritesController
         return Response::success($favoriteDashboardIds);
     }
 
-    public function store(Request $request): Response
+    public function store(Request $request, int $authUserId): Response
     {
-        $userId = (int) $request->getBodyParam('user_id', 0);
         $dashboardId = (int) $request->getBodyParam('dashboard_id', 0);
+        $userId = $authUserId;
 
         $errors = $this->validateIds($userId, $dashboardId);
         if (!empty($errors)) {

@@ -17,6 +17,8 @@ function setCorsHeaders()
 
     if (in_array($origin, $allowedOrigins)) {
         header("Access-Control-Allow-Origin: $origin");
+    } elseif (DEBUG_MODE && preg_match('#^https?://(localhost|127\.0\.0\.1|\[::1\]|::1)(:\d+)?$#', $origin)) {
+        header("Access-Control-Allow-Origin: $origin");
     } else {
         header("Access-Control-Allow-Origin: $fallbackOrigin");
     }

@@ -14,8 +14,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 try {
     $controller = new \App\Controllers\DashboardFavoritesController();
     $request = new \Shared\Request();
+    $authUser = \Shared\AuthGuard::requireAuth($request);
     $method = $_SERVER['REQUEST_METHOD'];
-    $userId = (int) $request->getQueryParam('user_id', 0);
+    $userId = $authUser['id'];
     $dashboardId = (int) $request->getQueryParam('dashboard_id', 0);
 
     switch ($method) {
@@ -23,7 +24,7 @@ try {
             $response = $controller->index($userId);
             break;
         case 'POST':
-            $response = $controller->store($request);
+            $response = $controller->store($request, $userId);
             break;
         case 'DELETE':
             $response = $controller->destroy($userId, $dashboardId);

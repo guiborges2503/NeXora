@@ -30,6 +30,10 @@ define('DB_USER', getenv('DB_USER') ?: 'root');
 define('DB_PASS', getenv('DB_PASS') ?: '');
 define('DB_PORT', getenv('DB_PORT') ?: '3306');
 
+// JWT — altere JWT_SECRET em produção
+define('JWT_SECRET', getenv('JWT_SECRET') ?: 'nexora-dev-secret-change-in-production');
+define('JWT_TTL_SECONDS', (int) (getenv('JWT_TTL_SECONDS') ?: 86400));
+
 // URL pública do front (links em e-mails; ex.: http://localhost:5173)
 define('FRONTEND_PUBLIC_URL', getenv('FRONTEND_PUBLIC_URL') ?: FRONTEND_BASE_URL);
 
@@ -41,3 +45,16 @@ define('MAIL_SMTP_PASS', getenv('MAIL_SMTP_PASS') ?: '');
 define('MAIL_SMTP_ENCRYPTION', strtolower(getenv('MAIL_SMTP_ENCRYPTION') ?: 'tls'));
 define('MAIL_FROM_ADDRESS', getenv('MAIL_FROM_ADDRESS') ?: 'noreply@nexora.local');
 define('MAIL_FROM_NAME', getenv('MAIL_FROM_NAME') ?: 'NeXora');
+
+// OpenRouter — geração de relatórios IA no backend
+define('OPENROUTER_API_KEY', getenv('OPENROUTER_API_KEY') ?: '');
+define('OPENROUTER_DEFAULT_MODEL', getenv('OPENROUTER_DEFAULT_MODEL') ?: 'openai/gpt-4o-mini');
+define('AI_REPORT_MAX_ROWS', (int) (getenv('AI_REPORT_MAX_ROWS') ?: 500));
+
+$openRouterSslVerifyEnv = getenv('OPENROUTER_SSL_VERIFY');
+if ($openRouterSslVerifyEnv !== false && $openRouterSslVerifyEnv !== '') {
+    define('OPENROUTER_SSL_VERIFY', filter_var($openRouterSslVerifyEnv, FILTER_VALIDATE_BOOLEAN));
+} else {
+    // WAMP/local costuma falhar sem CA bundle — em DEBUG_MODE não exige certificado
+    define('OPENROUTER_SSL_VERIFY', !(defined('DEBUG_MODE') && DEBUG_MODE));
+}
