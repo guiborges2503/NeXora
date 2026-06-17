@@ -1,0 +1,15 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # API PHP (pasta api/ na raiz do site)
+  RewriteRule ^api/(.*)$ api/$1 [L,QSA]
+
+  # Arquivos e pastas reais (assets, favicon, etc.)
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # SPA React — demais rotas vão para index.html
+  RewriteRule ^ index.html [L]
+</IfModule>

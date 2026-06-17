@@ -33,6 +33,7 @@ export default defineConfig({
       port: DEV_PORT,
       clientPort: DEV_PORT,
     },
+    // Apenas desenvolvimento local — em produção o PHP já roda em /api no Hostinger
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:8000',
