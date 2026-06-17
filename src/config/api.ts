@@ -1,7 +1,11 @@
 import { clearAuthSession, getAuthToken } from "@/config/auth";
 
-export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? "/api" : "http://localhost:8000/api");
+/**
+ * API no mesmo domínio do site.
+ * Produção: https://nexora.conectaxcon.com.br/api/...
+ * Dev local: Vite faz proxy de /api → PHP (npm run dev:api) — só para desenvolvimento.
+ */
+export const API_BASE_URL = "/api";
 
 async function apiRequest<T>(
   endpoint: string,

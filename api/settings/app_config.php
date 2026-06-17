@@ -35,12 +35,12 @@ if ($environment === 'development') {
     define('CORS_FALLBACK_ORIGIN', 'http://127.0.0.1:5173');
     define('DEBUG_MODE', true);
 } else {
-    define('FRONTEND_BASE_URL', 'https://tcc.example.com');
+    define('FRONTEND_BASE_URL', 'https://nexora.conectaxcon.com.br');
     define('CORS_ALLOWED_ORIGINS', [
-        'https://tcc.example.com',
-        'https://www.tcc.example.com',
+        'https://nexora.conectaxcon.com.br',
+        'https://www.nexora.conectaxcon.com.br',
     ]);
-    define('CORS_FALLBACK_ORIGIN', 'https://tcc.example.com');
+    define('CORS_FALLBACK_ORIGIN', 'https://nexora.conectaxcon.com.br');
     define('DEBUG_MODE', false);
 }
 
