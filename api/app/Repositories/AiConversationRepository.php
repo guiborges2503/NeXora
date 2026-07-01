@@ -24,7 +24,7 @@ class AiConversationRepository
             "SELECT id, user_id, title, messages_json, created_at, updated_at
              FROM ai_conversations
              WHERE user_id = :user_id
-             ORDER BY datetime(updated_at) DESC
+             ORDER BY " . sqlOrderByDateTime('updated_at') . "
              LIMIT {$limit}"
         );
         $stmt->execute(['user_id' => $userId]);

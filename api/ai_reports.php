@@ -26,7 +26,11 @@ try {
     switch ($method) {
         case 'GET':
             \Shared\AuthGuard::requirePermission($authUser, 'dashboards.read');
-            $response = $id > 0 ? $controller->show($id, $userId, $userRole) : $controller->index($userId, $userRole);
+            if ($id > 0 && (string) $request->getQueryParam('preview', '') === 'card') {
+                $response = $controller->cardPreview($id, $userId, $userRole);
+            } else {
+                $response = $id > 0 ? $controller->show($id, $userId, $userRole) : $controller->index($userId, $userRole);
+            }
             break;
         case 'POST':
             if ($action === 'generate') {

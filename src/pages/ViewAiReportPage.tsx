@@ -13,6 +13,7 @@ import {
   incrementAiReportView,
   updateAiReportSharing,
   type AiReportDashboardData,
+  type AiReportDefinition,
 } from "@/config/aiReportsApi";
 import { getCurrentUserId } from "@/config/favorites";
 import { getStoredUser } from "@/config/currentUser";
@@ -31,6 +32,7 @@ export function ViewAiReportPage() {
   const [ownerId, setOwnerId] = useState(0);
   const [viewsCount, setViewsCount] = useState(0);
   const [dashboard, setDashboard] = useState<AiReportDashboardData | null>(null);
+  const [reportDefinition, setReportDefinition] = useState<AiReportDefinition | null>(null);
   const [isPublic, setIsPublic] = useState(false);
   const [allowedRoles, setAllowedRoles] = useState<string[]>([]);
   const [isSavingShare, setIsSavingShare] = useState(false);
@@ -64,6 +66,7 @@ export function ViewAiReportPage() {
         setIsPublic(Boolean(report.is_public));
         setAllowedRoles(report.allowed_roles ?? []);
         setDashboard(data.dashboard);
+        setReportDefinition(data.definition ?? null);
 
         await incrementAiReportView(reportId);
       } catch (error) {
@@ -171,6 +174,10 @@ export function ViewAiReportPage() {
           description={description}
           businessRules={businessRules}
           dashboard={dashboard}
+          insights={reportDefinition?.insights}
+          recommendations={reportDefinition?.recommendations}
+          filters={reportDefinition?.filters}
+          theme={reportDefinition?.theme}
         />
       ) : null}
 

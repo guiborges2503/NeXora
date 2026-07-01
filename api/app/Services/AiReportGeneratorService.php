@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Prompts\NexoraAiReportEnginePrompt;
 use PDO;
 use RuntimeException;
 
@@ -49,10 +50,13 @@ class AiReportGeneratorService
                 ['role' => 'assistant', 'content' => $raw],
                 [
                     'role' => 'user',
-                    'content' => 'Corrija o JSON. Retorne um PAINEL (layout dashboard) com '
+                    'content' => 'Corrija o JSON DSL. Retorne um painel executivo com '
                         . "pelo menos {$widgetHint} widgets distintos (cada pedido = 1 widget), "
-                        . '2 a 4 KPIs no topo, e cada widget com sql SELECT próprio. '
-                        . 'Campos: title, description, category, business_rules, kpis[], widgets[].',
+                        . '2 a 4 KPIs, layout grid 12 colunas, insights[], recommendations[]. '
+                        . 'OBRIGATÓRIO: cada widget e cada KPI deve ter campo "sql" com SELECT MySQL válido. '
+                        . 'Não use apenas "dataset" ou "metric" sem SQL. '
+                        . 'Mantenha widgets/kpis/charts na raiz do JSON (dashboard{} é só título/descrição). '
+                        . 'Campos: dashboard{}, layout{}, filters[], kpis[], widgets[], insights[], recommendations[].',
                 ],
             ]);
 
@@ -142,7 +146,7 @@ class AiReportGeneratorService
 
         // Persist widget SQL nos metadados salvos
         $dashboard['widgets'] = array_map(function (array $executedWidget) {
-            return [
+            $widget = [
                 'id' => $executedWidget['id'],
                 'title' => $executedWidget['title'],
                 'description' => $executedWidget['description'] ?? '',
@@ -152,6 +156,12 @@ class AiReportGeneratorService
                 'y_key' => $executedWidget['y_key'],
                 'span' => $executedWidget['span'],
             ];
+            foreach (['series_key', 'x', 'y', 'w', 'h', 'color'] as $key) {
+                if (!empty($executedWidget[$key])) {
+                    $widget[$key] = $executedWidget[$key];
+                }
+            }
+            return $widget;
         }, $executed['widgets']);
 
         return [
@@ -165,55 +175,7 @@ class AiReportGeneratorService
         $schema = $this->schema->getSchemaDescription();
         $expectedWidgets = max(1, $this->countRequestedAnalyses($userPrompt));
 
-        return <<<PROMPT
-Você é um analista sênior de BI da plataforma NeXora.
-Gere um PAINEL PROFISSIONAL completo em JSON (sem markdown), atendendo TODOS os pedidos do usuário.
-
-O usuário pediu aproximadamente {$expectedWidgets} análise(s). Crie UM widget SQL distinto para CADA pedido (não agrupe tudo em um único gráfico).
-
-Estrutura OBRIGATÓRIA:
-{
-  "layout": "dashboard",
-  "title": "título executivo do painel",
-  "description": "resumo executivo",
-  "category": "commercial|marketing|finance|hr|operations|other",
-  "business_rules": "regras de negócio aplicadas",
-  "kpis": [
-    {
-      "id": "kpi1",
-      "label": "Faturamento total",
-      "sql": "SELECT ROUND(SUM(total_amount),2) AS value FROM sales",
-      "value_key": "value",
-      "format": "currency|number|percent"
-    }
-  ],
-  "widgets": [
-    {
-      "id": "w1",
-      "title": "título do bloco",
-      "description": "o que mostra",
-      "chart_type": "bar|line|pie|table",
-      "sql": "SELECT ...",
-      "x_key": "coluna rotulo",
-      "y_key": "coluna numerica",
-      "span": "half|full"
-    }
-  ]
-}
-
-Regras:
-- layout sempre "dashboard".
-- widgets: mínimo {$expectedWidgets} itens, cada um com sql SELECT próprio.
-- Use chart_type "table" quando o pedido mencionar tabela/listagem.
-- Use chart_type "bar" para rankings/comparativos, "line" para evolução temporal.
-- span "full" para tabelas; "half" para gráficos compactos.
-- kpis: 2 a 4 indicadores resumidos no topo (totais, ticket médio, quantidade, etc.).
-- SQL SQLite, somente tabelas permitidas, aliases legíveis.
-- Para últimos 3 meses: sale_date >= date('now','-3 months').
-- x_key e y_key devem existir no resultado de cada widget (exceto tabelas).
-
-{$schema}
-PROMPT;
+        return NexoraAiReportEnginePrompt::build($schema, $expectedWidgets);
     }
 
     private function countRequestedAnalyses(string $prompt): int
@@ -396,10 +358,10 @@ PROMPT;
                     'id' => 'w_sellers',
                     'title' => 'Ranking de vendedores (últimos 3 meses)',
                     'description' => 'Desempenho por vendedor no trimestre recente',
-                    'chart_type' => 'bar',
+                    'chart_type' => 'horizontal_bar',
                     'sql' => "SELECT seller_name, ROUND(SUM(total_amount), 2) AS total_vendas
                               FROM sales
-                              WHERE sale_date >= date('now', '-3 months')
+                              WHERE sale_date >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
                               GROUP BY seller_name
                               ORDER BY total_vendas DESC
                               LIMIT 10",
@@ -581,18 +543,230 @@ PROMPT;
     private function unwrapDefinition(array $decoded): array
     {
         if (isset($decoded['definition']) && is_array($decoded['definition'])) {
-            return $decoded['definition'];
+            return $this->mergeDslEnvelope($decoded, $decoded['definition']);
         }
 
         if (isset($decoded['report']) && is_array($decoded['report'])) {
-            return $decoded['report'];
+            return $this->mergeDslEnvelope($decoded, $decoded['report']);
         }
 
         if (isset($decoded['dashboard']) && is_array($decoded['dashboard'])) {
-            return $decoded['dashboard'];
+            $dashboard = $decoded['dashboard'];
+            if ($this->hasExecutableContent($dashboard)) {
+                return $this->mergeDslEnvelope($decoded, $dashboard);
+            }
+
+            // DSL: dashboard{} é só metadados; widgets/kpis/charts ficam na raiz
+            return $decoded;
         }
 
         return $decoded;
+    }
+
+    /**
+     * @param array<string, mixed> $envelope
+     * @param array<string, mixed> $primary
+     * @return array<string, mixed>
+     */
+    private function mergeDslEnvelope(array $envelope, array $primary): array
+    {
+        $merged = array_merge($envelope, $primary);
+        unset($merged['definition'], $merged['report']);
+
+        if (isset($envelope['dashboard']) && is_array($envelope['dashboard']) && !$this->hasExecutableContent($envelope['dashboard'])) {
+            $meta = $envelope['dashboard'];
+            foreach (['title', 'description', 'theme', 'category', 'business_rules'] as $key) {
+                if (empty($merged[$key]) && !empty($meta[$key])) {
+                    $merged[$key] = $meta[$key];
+                }
+            }
+            if (!empty($meta['layout']) && !is_array($meta['layout'])) {
+                $merged['layout_style'] = $meta['layout'];
+            }
+        }
+
+        return $merged;
+    }
+
+    /**
+     * @param array<string, mixed> $definition
+     */
+    private function hasExecutableContent(array $definition): bool
+    {
+        if ($this->extractSql($definition) !== '') {
+            return true;
+        }
+
+        foreach (['widgets', 'kpis', 'charts', 'tables'] as $key) {
+            if (!empty($definition[$key]) && is_array($definition[$key])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param array<string, mixed> $definition
+     * @return array<string, mixed>
+     */
+    /**
+     * @param array<string, mixed> $definition
+     * @return array<string, mixed>
+     */
+    private function preprocessDslDefinition(array $definition): array
+    {
+        if (isset($definition['dashboard']) && is_array($definition['dashboard'])) {
+            $meta = $definition['dashboard'];
+            foreach (['title', 'description', 'theme'] as $key) {
+                if (empty($definition[$key]) && !empty($meta[$key])) {
+                    $definition[$key] = $meta[$key];
+                }
+            }
+            if (!empty($meta['layout']) && !is_array($meta['layout'])) {
+                $definition['layout_style'] = $meta['layout'];
+            }
+        }
+
+        $widgets = is_array($definition['widgets'] ?? null) ? $definition['widgets'] : [];
+        foreach (['charts', 'tables'] as $section) {
+            if (empty($definition[$section]) || !is_array($definition[$section])) {
+                continue;
+            }
+            foreach ($definition[$section] as $item) {
+                if (!is_array($item)) {
+                    continue;
+                }
+                if ($section === 'tables' && empty($item['chart_type']) && empty($item['type'])) {
+                    $item['type'] = 'table';
+                }
+                $widgets[] = $item;
+            }
+        }
+
+        $kpis = is_array($definition['kpis'] ?? null) ? $definition['kpis'] : [];
+        $chartWidgets = [];
+        foreach ($widgets as $widget) {
+            if (!is_array($widget)) {
+                continue;
+            }
+            $type = strtolower(trim((string) ($widget['type'] ?? '')));
+            if ($type === 'kpi') {
+                $sql = $this->extractSql($widget);
+                if ($sql !== '') {
+                    $kpis[] = [
+                        'id' => $widget['id'] ?? ('kpi_' . (count($kpis) + 1)),
+                        'label' => $widget['title'] ?? $widget['label'] ?? 'KPI',
+                        'sql' => $sql,
+                        'value_key' => $widget['value_key'] ?? 'value',
+                        'format' => $widget['format'] ?? 'number',
+                    ];
+                }
+                continue;
+            }
+            if (empty($widget['chart_type']) && $type !== '') {
+                $widget['chart_type'] = $this->mapWidgetTypeToChartType($type);
+            }
+            $chartWidgets[] = $widget;
+        }
+
+        $definition['widgets'] = $chartWidgets;
+        if (!empty($kpis)) {
+            $definition['kpis'] = $kpis;
+        }
+
+        return $definition;
+    }
+
+    private function mapWidgetTypeToChartType(string $type): string
+    {
+        $map = [
+            'line_chart' => 'line',
+            'line' => 'line',
+            'area_chart' => 'area',
+            'area' => 'area',
+            'stacked_area' => 'area',
+            'bar_chart' => 'bar',
+            'bar' => 'bar',
+            'horizontal_bar' => 'horizontal_bar',
+            'ranking' => 'horizontal_bar',
+            'donut' => 'donut',
+            'pie_chart' => 'pie',
+            'pie' => 'pie',
+            'table' => 'table',
+            'heatmap' => 'heatmap',
+        ];
+
+        return $map[strtolower(trim($type))] ?? 'bar';
+    }
+
+    /**
+     * @param array<string, mixed> $widget
+     */
+    private function inferSpanFromGrid(array $widget): string
+    {
+        $span = trim((string) ($widget['span'] ?? ''));
+        if (in_array($span, ['half', 'full'], true)) {
+            return $span;
+        }
+
+        $w = (int) ($widget['w'] ?? 0);
+        $type = strtolower(trim((string) ($widget['type'] ?? $widget['chart_type'] ?? '')));
+
+        if ($type === 'table' || $w >= 8 || $w === 12) {
+            return 'full';
+        }
+
+        return 'half';
+    }
+
+    /**
+     * @param array<string, mixed> $definition
+     * @return array<string, mixed>
+     */
+    private function extractDslMetadata(array $definition): array
+    {
+        $layout = $definition['layout'] ?? null;
+        $gridLayout = ['type' => 'grid', 'columns' => 12];
+        $layoutStyle = trim((string) ($definition['layout_style'] ?? 'executive'));
+
+        if (is_array($layout) && ($layout['type'] ?? '') === 'grid') {
+            $gridLayout = $layout;
+        } elseif (is_string($layout) && $layout !== 'dashboard' && $layoutStyle === 'executive') {
+            $layoutStyle = $layout;
+        }
+
+        return [
+            'insights' => $this->normalizeStringList($definition['insights'] ?? []),
+            'recommendations' => $this->normalizeStringList($definition['recommendations'] ?? []),
+            'filters' => is_array($definition['filters'] ?? null) ? $definition['filters'] : [],
+            'grid_layout' => $gridLayout,
+            'theme' => trim((string) ($definition['theme'] ?? 'professional')),
+            'layout_style' => $layoutStyle,
+        ];
+    }
+
+    /**
+     * @param mixed $items
+     * @return string[]
+     */
+    private function normalizeStringList($items): array
+    {
+        if (!is_array($items)) {
+            return [];
+        }
+
+        $result = [];
+        foreach ($items as $item) {
+            if (is_string($item)) {
+                $text = trim($item);
+                if ($text !== '') {
+                    $result[] = $text;
+                }
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -601,6 +775,9 @@ PROMPT;
      */
     private function normalizeToDashboard(array $definition, string $fallbackTitle): array
     {
+        $definition = $this->preprocessDslDefinition($definition);
+        $metadata = $this->extractDslMetadata($definition);
+
         if (!empty($definition['widgets']) && is_array($definition['widgets'])) {
             $widgets = [];
             $index = 1;
@@ -614,7 +791,7 @@ PROMPT;
                 }
             }
 
-            return [
+            return array_merge([
                 'layout' => 'dashboard',
                 'title' => trim((string) ($definition['title'] ?? $fallbackTitle)),
                 'description' => trim((string) ($definition['description'] ?? $fallbackTitle)),
@@ -622,7 +799,7 @@ PROMPT;
                 'business_rules' => trim((string) ($definition['business_rules'] ?? $fallbackTitle)),
                 'kpis' => $this->normalizeKpis($definition['kpis'] ?? []),
                 'widgets' => $widgets,
-            ];
+            ], $metadata);
         }
 
         $sql = $this->extractSql($definition);
@@ -645,7 +822,7 @@ PROMPT;
             throw new RuntimeException('Widget inválido no relatório');
         }
 
-        return [
+        return array_merge([
             'layout' => 'dashboard',
             'title' => trim((string) ($definition['title'] ?? $fallbackTitle)),
             'description' => trim((string) ($definition['description'] ?? $fallbackTitle)),
@@ -653,7 +830,7 @@ PROMPT;
             'business_rules' => trim((string) ($definition['business_rules'] ?? $fallbackTitle)),
             'kpis' => $this->normalizeKpis($definition['kpis'] ?? []),
             'widgets' => [$widget],
-        ];
+        ], $metadata);
     }
 
     /**
@@ -662,22 +839,23 @@ PROMPT;
      */
     private function normalizeWidget(array $widget, int $index): ?array
     {
-        $sql = $this->extractSql($widget);
+        $sql = $this->resolveWidgetSql($widget);
         if ($sql === '') {
             return null;
         }
 
-        $chartType = trim((string) ($widget['chart_type'] ?? 'bar'));
-        if (!in_array($chartType, ['bar', 'line', 'pie', 'table'], true)) {
+        $rawType = trim((string) ($widget['type'] ?? ''));
+        $chartType = trim((string) ($widget['chart_type'] ?? ''));
+        if ($chartType === '' && $rawType !== '') {
+            $chartType = $this->mapWidgetTypeToChartType($rawType);
+        }
+        if (!in_array($chartType, ['bar', 'line', 'pie', 'table', 'area', 'donut', 'horizontal_bar', 'heatmap'], true)) {
             $chartType = 'bar';
         }
 
-        $span = trim((string) ($widget['span'] ?? ''));
-        if (!in_array($span, ['half', 'full'], true)) {
-            $span = $chartType === 'table' ? 'full' : 'half';
-        }
+        $span = $this->inferSpanFromGrid($widget);
 
-        return [
+        $normalized = [
             'id' => trim((string) ($widget['id'] ?? ('w' . $index))),
             'title' => trim((string) ($widget['title'] ?? ('Visualização ' . $index))),
             'description' => trim((string) ($widget['description'] ?? '')),
@@ -687,6 +865,19 @@ PROMPT;
             'y_key' => trim((string) ($widget['y_key'] ?? $widget['yKey'] ?? $widget['value_key'] ?? '')),
             'span' => $span,
         ];
+
+        $seriesKey = trim((string) ($widget['series_key'] ?? $widget['seriesKey'] ?? ''));
+        if ($seriesKey !== '') {
+            $normalized['series_key'] = $seriesKey;
+        }
+
+        foreach (['x', 'y', 'w', 'h'] as $gridKey) {
+            if (isset($widget[$gridKey])) {
+                $normalized[$gridKey] = (int) $widget[$gridKey];
+            }
+        }
+
+        return $normalized;
     }
 
     /**
@@ -707,15 +898,27 @@ PROMPT;
             }
             $sql = $this->extractSql($kpi);
             if ($sql === '') {
+                $sql = $this->resolveSqlFromHint(
+                    strtolower((string) ($kpi['label'] ?? $kpi['title'] ?? '')),
+                    'kpi'
+                );
+            }
+            if ($sql === '') {
                 continue;
             }
-            $result[] = [
+            $entry = [
                 'id' => trim((string) ($kpi['id'] ?? ('kpi' . $index))),
-                'label' => trim((string) ($kpi['label'] ?? ('Indicador ' . $index))),
+                'label' => trim((string) ($kpi['label'] ?? $kpi['title'] ?? ('Indicador ' . $index))),
                 'sql' => $sql,
                 'value_key' => trim((string) ($kpi['value_key'] ?? $kpi['valueKey'] ?? 'value')),
                 'format' => trim((string) ($kpi['format'] ?? 'number')),
             ];
+            foreach (['comparison_percent', 'trend', 'icon', 'color', 'description'] as $metaKey) {
+                if (!empty($kpi[$metaKey])) {
+                    $entry[$metaKey] = $kpi[$metaKey];
+                }
+            }
+            $result[] = $entry;
             $index++;
             if ($index > 6) {
                 break;
@@ -758,6 +961,11 @@ PROMPT;
                     'format' => $kpi['format'],
                     'value' => $value,
                 ];
+                foreach (['comparison_percent', 'trend', 'icon', 'color', 'description'] as $metaKey) {
+                    if (isset($kpi[$metaKey])) {
+                        $executedKpis[count($executedKpis) - 1][$metaKey] = $kpi[$metaKey];
+                    }
+                }
             } catch (\Throwable $e) {
                 continue;
             }
@@ -810,11 +1018,117 @@ PROMPT;
      */
     private function extractSql(array $definition): string
     {
-        $keys = ['sql', 'query', 'sql_query', 'SQL', 'select', 'statement'];
+        $keys = ['sql', 'query', 'sql_query', 'SQL', 'select', 'statement', 'data_query'];
         foreach ($keys as $key) {
             if (!empty($definition[$key]) && is_string($definition[$key])) {
-                return trim($definition[$key]);
+                $value = trim($definition[$key]);
+                if ($this->looksLikeSelect($value)) {
+                    return $value;
+                }
             }
+        }
+
+        if (!empty($definition['dataset']) && is_string($definition['dataset'])) {
+            $value = trim($definition['dataset']);
+            if ($this->looksLikeSelect($value)) {
+                return $value;
+            }
+        }
+
+        foreach (['data_source', 'dataSource', 'source'] as $nestedKey) {
+            if (!empty($definition[$nestedKey]) && is_array($definition[$nestedKey])) {
+                $nested = $this->extractSql($definition[$nestedKey]);
+                if ($nested !== '') {
+                    return $nested;
+                }
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * @param array<string, mixed> $widget
+     */
+    private function resolveWidgetSql(array $widget): string
+    {
+        $sql = $this->extractSql($widget);
+        if ($sql !== '') {
+            return $sql;
+        }
+
+        $hint = strtolower(trim((string) (
+            $widget['dataset']
+            ?? $widget['metric']
+            ?? $widget['title']
+            ?? $widget['description']
+            ?? ''
+        )));
+
+        if ($hint === '') {
+            return '';
+        }
+
+        return $this->resolveSqlFromHint($hint, (string) ($widget['type'] ?? $widget['chart_type'] ?? ''));
+    }
+
+    private function looksLikeSelect(string $value): bool
+    {
+        return stripos($value, 'SELECT') === 0 || stripos($value, 'WITH') === 0;
+    }
+
+    private function resolveSqlFromHint(string $hint, string $type): string
+    {
+        $templates = [
+            'receita_mensal' => "SELECT DATE_FORMAT(sale_date, '%Y-%m') AS mes, ROUND(SUM(total_amount), 2) AS receita FROM sales GROUP BY mes ORDER BY mes",
+            'receita_total' => 'SELECT ROUND(SUM(total_amount), 2) AS value FROM sales',
+            'faturamento_total' => 'SELECT ROUND(SUM(total_amount), 2) AS value FROM sales',
+            'vendas_por_regiao' => 'SELECT r.name AS regiao, ROUND(SUM(s.total_amount), 2) AS receita FROM sales s INNER JOIN regions r ON r.id = s.region_id GROUP BY r.name ORDER BY receita DESC',
+            'ranking_vendedores' => "SELECT seller_name, ROUND(SUM(total_amount), 2) AS total_vendas FROM sales WHERE sale_date >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH) GROUP BY seller_name ORDER BY total_vendas DESC LIMIT 10",
+            'top_produtos' => 'SELECT p.name AS produto, p.category AS categoria, ROUND(SUM(s.total_amount), 2) AS faturamento, SUM(s.quantity) AS quantidade FROM sales s INNER JOIN products p ON p.id = s.product_id GROUP BY p.id, p.name, p.category ORDER BY faturamento DESC LIMIT 20',
+            'faturamento_por_produto' => 'SELECT p.name AS produto, ROUND(SUM(s.total_amount), 2) AS faturamento FROM sales s INNER JOIN products p ON p.id = s.product_id GROUP BY p.id, p.name ORDER BY faturamento DESC',
+            'faturamento_por_cliente' => 'SELECT c.name AS cliente, ROUND(SUM(s.total_amount), 2) AS faturamento FROM sales s INNER JOIN customers c ON c.id = s.customer_id GROUP BY c.id, c.name ORDER BY faturamento DESC LIMIT 20',
+            'ticket_medio' => 'SELECT ROUND(AVG(total_amount), 2) AS value FROM sales',
+            'itens_vendidos' => 'SELECT SUM(quantity) AS value FROM sales',
+        ];
+
+        $normalized = preg_replace('/[^a-z0-9_]+/u', '_', $hint) ?? $hint;
+        $normalized = trim($normalized, '_');
+
+        if (isset($templates[$normalized])) {
+            return $templates[$normalized];
+        }
+
+        if (strpos($hint, 'vendedor') !== false || strpos($hint, 'ranking') !== false || $type === 'horizontal_bar') {
+            return $templates['ranking_vendedores'];
+        }
+
+        if (strpos($hint, 'regi') !== false) {
+            return $templates['vendas_por_regiao'];
+        }
+
+        if (strpos($hint, 'produto') !== false || strpos($hint, 'tabela') !== false || $type === 'table') {
+            return $templates['top_produtos'];
+        }
+
+        if (strpos($hint, 'cliente') !== false) {
+            return $templates['faturamento_por_cliente'];
+        }
+
+        if (strpos($hint, 'mensal') !== false || strpos($hint, 'evolu') !== false || strpos($hint, 'tend') !== false) {
+            return $templates['receita_mensal'];
+        }
+
+        if (strpos($hint, 'receita') !== false || strpos($hint, 'faturamento') !== false) {
+            return $templates['receita_total'];
+        }
+
+        if (strpos($hint, 'quantidade') !== false || strpos($hint, 'itens') !== false) {
+            return $templates['itens_vendidos'];
+        }
+
+        if (strpos($hint, 'ticket') !== false) {
+            return $templates['ticket_medio'];
         }
 
         return '';

@@ -20,7 +20,7 @@ class DashboardFavoriteRepository
             "SELECT dashboard_id
              FROM dashboard_favorites
              WHERE user_id = :user_id
-             ORDER BY datetime(favorited_at) DESC"
+             ORDER BY " . sqlOrderByDateTime('favorited_at')
         );
         $stmt->execute(['user_id' => $userId]);
 

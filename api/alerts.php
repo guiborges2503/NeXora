@@ -32,7 +32,7 @@ try {
             'Geral' AS category,
             a.created_at
          FROM alerts a
-         ORDER BY datetime(a.created_at) DESC"
+         ORDER BY " . sqlOrderByDateTime('a.created_at')
     );
 
     $alerts = $stmt ? $stmt->fetchAll() : [];

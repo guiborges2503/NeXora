@@ -204,8 +204,7 @@ class UserRepository
         }
 
         $stmtAssign = $this->db->prepare(
-            "INSERT OR IGNORE INTO user_roles (user_id, role_id, assigned_at)
-             VALUES (:user_id, :role_id, :assigned_at)"
+            insertIgnoreSql('user_roles', 'user_id, role_id, assigned_at', ':user_id, :role_id, :assigned_at')
         );
 
         $stmtAssign->execute([

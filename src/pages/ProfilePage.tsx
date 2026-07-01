@@ -5,7 +5,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Mail, Shield, Upload, Save } from "lucide-react";
+import { User, Mail, Shield, Upload, Save, Palette } from "lucide-react";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { useTheme } from "next-themes";
 import { apiGet, apiPatch } from "@/config/api";
 import { getRoleLabel, getStoredUser, getUserInitials } from "@/config/currentUser";
 
@@ -46,6 +48,7 @@ export function ProfilePage() {
   const [isVerifyingCurrentPassword, setIsVerifyingCurrentPassword] = useState(false);
 
   const [initialSnapshot, setInitialSnapshot] = useState<ProfileResponse | null>(null);
+  const { resolvedTheme } = useTheme();
 
   function formatPhone(value: string): string {
     const digits = value.replace(/\D/g, "").slice(0, 11);
@@ -461,6 +464,29 @@ export function ProfilePage() {
               </div>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Palette className="w-5 h-5" />
+            Aparência
+          </CardTitle>
+          <CardDescription>
+            Tema aplicado em todo o NeXora, incluindo relatórios IA e dashboards.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium">
+              Modo atual: {resolvedTheme === "light" ? "Claro" : "Escuro"}
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              O painel executivo segue automaticamente esta preferência.
+            </p>
+          </div>
+          <ThemeToggle variant="labeled" className="border border-border bg-card shadow-sm" />
         </CardContent>
       </Card>
 

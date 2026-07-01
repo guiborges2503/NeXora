@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -11,13 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, TrendingUp, Users, DollarSign, Package, MoreVertical, Star, Sparkles } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Plus, Search, TrendingUp, Users, DollarSign, Package, Star, Sparkles } from "lucide-react";
+import { DashboardListCard } from "@/components/dashboards/DashboardListCard";
 import { apiDelete, apiGet, apiPost } from "@/config/api";
 import { fetchAiReports, type AiReportListItem } from "@/config/aiReportsApi";
 import { getCurrentUserId, listFavoriteDashboardIds } from "@/config/favorites";
@@ -42,7 +36,7 @@ export function HomePage() {
   const navigate = useNavigate();
   const [dashboards, setDashboards] = useState<DashboardItem[]>([]);
   const [favoriteDashboardIds, setFavoriteDashboardIds] = useState<number[]>([]);
-  const [showAllDashboards, setShowAllDashboards] = useState(false);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [sortBy, setSortBy] = useState("recent");
@@ -120,7 +114,7 @@ export function HomePage() {
         searchValue === "" ||
         dashboard.name.toLowerCase().includes(searchValue) ||
         dashboard.description.toLowerCase().includes(searchValue);
-      const matchesFavorites = showAllDashboards || favoritesSet.has(dashboard.id);
+      const matchesFavorites = !showFavoritesOnly || favoritesSet.has(dashboard.id);
       return matchesCategory && matchesSearch && matchesFavorites;
     });
 
@@ -137,7 +131,7 @@ export function HomePage() {
     sorted.sort((a, b) => Number(favoritesSet.has(b.id)) - Number(favoritesSet.has(a.id)));
 
     return sorted;
-  }, [dashboards, search, categoryFilter, sortBy, favoriteDashboardIds, showAllDashboards]);
+  }, [dashboards, search, categoryFilter, sortBy, favoriteDashboardIds, showFavoritesOnly]);
 
   function getCategoryLabel(category: DashboardItem["category"]): string {
     const labels: Record<DashboardItem["category"], string> = {
@@ -165,12 +159,24 @@ export function HomePage() {
 
   function getDashboardColor(category: DashboardItem["category"]) {
     const mapping = {
-      commercial: "text-green-600 bg-green-50",
-      marketing: "text-blue-600 bg-blue-50",
-      finance: "text-emerald-600 bg-emerald-50",
-      hr: "text-purple-600 bg-purple-50",
-      operations: "text-orange-600 bg-orange-50",
-      other: "text-gray-600 bg-gray-50",
+      commercial: "text-emerald-600 dark:text-emerald-400",
+      marketing: "text-sky-600 dark:text-sky-400",
+      finance: "text-teal-600 dark:text-teal-400",
+      hr: "text-violet-600 dark:text-violet-400",
+      operations: "text-orange-600 dark:text-orange-400",
+      other: "text-slate-600 dark:text-slate-400",
+    } as const;
+    return mapping[category];
+  }
+
+  function getCategoryPreviewGradient(category: DashboardItem["category"]) {
+    const mapping = {
+      commercial: "from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/30",
+      marketing: "from-sky-50 to-blue-50 dark:from-sky-950/40 dark:to-blue-950/30",
+      finance: "from-teal-50 to-emerald-50 dark:from-teal-950/40 dark:to-emerald-950/30",
+      hr: "from-violet-50 to-purple-50 dark:from-violet-950/40 dark:to-purple-950/30",
+      operations: "from-orange-50 to-amber-50 dark:from-orange-950/40 dark:to-amber-950/30",
+      other: "from-slate-50 to-slate-100 dark:from-slate-900/60 dark:to-slate-950/40",
     } as const;
     return mapping[category];
   }
@@ -296,11 +302,12 @@ export function HomePage() {
         <div className="flex items-center gap-2">
           <Button
             type="button"
-            variant={showAllDashboards ? "default" : "outline"}
+            variant={showFavoritesOnly ? "default" : "outline"}
             size="lg"
-            onClick={() => setShowAllDashboards((current) => !current)}
+            onClick={() => setShowFavoritesOnly((current) => !current)}
           >
-            Todos os Painéis
+            <Star className={`w-4 h-4 mr-2 ${showFavoritesOnly ? "fill-current" : ""}`} />
+            Favoritos
           </Button>
           <Button asChild size="lg" variant="outline">
             <Link to="/reports/create">
@@ -365,118 +372,41 @@ export function HomePage() {
         {!isLoading && errorMessage ? <p className="text-destructive">{errorMessage}</p> : null}
         {!isLoading && !errorMessage && filteredDashboards.length === 0 ? (
           <p className="text-muted-foreground">
-            {showAllDashboards
-              ? "Nenhum dashboard encontrado."
-              : "Nenhum dashboard favoritado encontrado."}
+            {showFavoritesOnly
+              ? "Nenhum dashboard favoritado encontrado."
+              : "Nenhum dashboard encontrado."}
           </p>
         ) : null}
 
         {filteredDashboards.map((dashboard) => {
           const Icon = getDashboardIcon(dashboard.category);
-          const color = getDashboardColor(dashboard.category);
+          const iconColor = getDashboardColor(dashboard.category);
+          const previewGradient = getCategoryPreviewGradient(dashboard.category);
           const isAiReport = dashboard.report_type === "ai_report";
           const previewUrl = isAiReport ? "" : buildPreviewEmbedUrl(dashboard.embed_url);
           const isPowerBiPreview = Boolean(!isAiReport && dashboard.embed_url?.includes("powerbi.com"));
           const isFavorite = favoriteDashboardIds.includes(dashboard.id);
           const viewPath = isAiReport ? `/reports/${dashboard.id}` : `/dashboards/${dashboard.id}`;
-          return (
-            <Card
-              key={`${dashboard.report_type ?? "powerbi"}-${dashboard.id}`}
-              className="relative overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group"
-            >
-              {previewUrl ? (
-                <>
-                  <iframe
-                    src={previewUrl}
-                    title={`Prévia ${dashboard.name}`}
-                    className={`absolute left-0 top-0 w-full border-0 pointer-events-none ${isPowerBiPreview ? "h-[calc(100%+96px)]" : "h-full"}`}
-                    loading="lazy"
-                    referrerPolicy="no-referrer"
-                    tabIndex={-1}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/45 to-black/75 backdrop-blur-[1px]" />
-                </>
-              ) : isAiReport ? (
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-700 via-violet-800 to-slate-900" />
-              ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-900" />
-              )}
 
-              <CardHeader className="relative z-10 pb-3 text-white">
-                <div className="flex items-start justify-between">
-                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center shadow-sm ring-1 ring-white/30 ${color}`}>
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="p-1.5 rounded border border-white/25 bg-black/35 text-white opacity-80 hover:opacity-100 transition-opacity">
-                        <MoreVertical className="w-4 h-4" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onSelect={() => handleEditDashboard(dashboard.id, dashboard.report_type, dashboard.owner_id)}
-                      >
-                        {isAiReport ? (canEditAiReport(dashboard.owner_id) ? "Editar" : "Abrir") : "Editar"}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onSelect={() => {
-                          handleShareDashboard(dashboard.id, dashboard.report_type);
-                        }}
-                      >
-                        Compartilhar
-                      </DropdownMenuItem>
-                      {!isAiReport ? (
-                        <DropdownMenuItem
-                          onSelect={() => {
-                            void handleDuplicateDashboard(dashboard.id);
-                          }}
-                        >
-                          Duplicar
-                        </DropdownMenuItem>
-                      ) : null}
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onSelect={() => void handleDeleteDashboard(dashboard.id, dashboard.report_type)}
-                      >
-                        Excluir
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardHeader>
-              <CardContent className="relative z-10 space-y-3 text-white">
-                <div>
-                  <h3 className="font-semibold mb-1 text-white">{dashboard.name}</h3>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="text-xs bg-white/20 text-white border border-white/25">
-                      {getCategoryLabel(dashboard.category)}
-                    </Badge>
-                    {isAiReport ? (
-                      <Badge variant="secondary" className="text-xs bg-violet-500/90 text-white border border-violet-300/60">
-                        <Sparkles className="w-3 h-3 mr-1" />
-                        Relatório IA
-                      </Badge>
-                    ) : null}
-                    {isFavorite ? (
-                      <Badge variant="secondary" className="text-xs bg-amber-500/90 text-white border border-amber-300/60">
-                        <Star className="w-3 h-3 mr-1 fill-current" />
-                        Favorito
-                      </Badge>
-                    ) : null}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between rounded-md bg-black/30 px-2 py-1 text-sm text-white/90">
-                  <span>{formatRelativeDate(dashboard.updated_at)}</span>
-                  <span>{dashboard.views_count} views</span>
-                </div>
-              </CardContent>
-              <CardFooter className="relative z-10 pt-0">
-                <Button asChild className="w-full bg-white text-slate-900 hover:bg-white/90" size="sm">
-                  <Link to={viewPath}>Visualizar</Link>
-                </Button>
-              </CardFooter>
-            </Card>
+          return (
+            <DashboardListCard
+              key={`${dashboard.report_type ?? "powerbi"}-${dashboard.id}`}
+              dashboard={dashboard}
+              categoryLabel={getCategoryLabel(dashboard.category)}
+              categoryIcon={Icon}
+              categoryIconColor={iconColor}
+              categoryPreviewGradient={previewGradient}
+              previewUrl={previewUrl}
+              isPowerBiPreview={isPowerBiPreview}
+              isFavorite={isFavorite}
+              viewPath={viewPath}
+              canEditAiReport={canEditAiReport(dashboard.owner_id)}
+              relativeDate={formatRelativeDate(dashboard.updated_at)}
+              onEdit={() => handleEditDashboard(dashboard.id, dashboard.report_type, dashboard.owner_id)}
+              onShare={() => handleShareDashboard(dashboard.id, dashboard.report_type)}
+              onDuplicate={!isAiReport ? () => void handleDuplicateDashboard(dashboard.id) : undefined}
+              onDelete={() => void handleDeleteDashboard(dashboard.id, dashboard.report_type)}
+            />
           );
         })}
       </div>

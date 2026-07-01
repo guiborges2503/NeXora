@@ -54,6 +54,51 @@ class AiReportsController
         ]);
     }
 
+    public function cardPreview(int $id, int $userId, string $userRole): Response
+    {
+        $db = Database::getInstance()->getConnection();
+        $repo = new AiReportRepository($db);
+        $report = $repo->findById($id);
+
+        if ($report === null) {
+            return Response::notFound('Relatório não encontrado');
+        }
+
+        if (!$repo->canUserAccess($report, $userId, $userRole)) {
+            return Response::forbidden('Você não tem permissão para ver este relatório');
+        }
+
+        try {
+            $generator = new AiReportGeneratorService($db);
+            $definition = is_array($report['definition']) ? $report['definition'] : [];
+            $promptContext = (string) ($report['prompt_summary'] ?? '');
+            $dashboard = $generator->executeDefinition($definition, $promptContext);
+        } catch (RuntimeException $e) {
+            return Response::error('Erro ao gerar prévia: ' . $e->getMessage(), 422);
+        }
+
+        $kpis = array_slice(is_array($dashboard['kpis'] ?? null) ? $dashboard['kpis'] : [], 0, 3);
+        $widgets = array_slice(is_array($dashboard['widgets'] ?? null) ? $dashboard['widgets'] : [], 0, 2);
+
+        $trimmedWidgets = [];
+        foreach ($widgets as $widget) {
+            if (!is_array($widget)) {
+                continue;
+            }
+            $rows = is_array($widget['rows'] ?? null) ? $widget['rows'] : [];
+            $widget['rows'] = array_slice($rows, 0, 8);
+            $trimmedWidgets[] = $widget;
+        }
+
+        return Response::success([
+            'chart_type' => (string) ($report['chart_type'] ?? 'dashboard'),
+            'dashboard' => [
+                'kpis' => $kpis,
+                'widgets' => $trimmedWidgets,
+            ],
+        ]);
+    }
+
     public function generate(Request $request): Response
     {
         $payload = $request->getBody();

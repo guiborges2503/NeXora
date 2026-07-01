@@ -64,7 +64,7 @@ class PasswordResetService
         if (!$sent) {
             Logger::getInstance()->error('PasswordResetService: falha ao enviar e-mail', ['email' => $email]);
             if (defined('DEBUG_MODE') && DEBUG_MODE) {
-                $logPath = dirname(__DIR__, 2) . '/database/data/password_reset_debug.log';
+                $logPath = dirname(__DIR__, 3) . '/database/data/password_reset_debug.log';
                 @file_put_contents(
                     $logPath,
                     date('c') . " email={$email} reset_link={$link}\n",

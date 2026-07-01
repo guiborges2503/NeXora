@@ -1,5 +1,6 @@
 import { Bell, Menu } from "lucide-react";
 import { useEffect, useState } from "react";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -233,6 +234,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
       </div>
 
       <div className={cn("flex items-center gap-3", pwaMode && "gap-1")}>
+        <ThemeToggle />
         {/* Notifications */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
