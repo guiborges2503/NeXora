@@ -4,8 +4,10 @@
  * Carrega todas as dependências necessárias para os endpoints
  */
 
+include_once __DIR__ . '/env.php';
 include_once __DIR__ . '/app_config.php';
 include_once __DIR__ . '/settings.php';
+require_once __DIR__ . '/../../database/db_dialect.php';
 
 // Autoload para classes Shared
 require_once __DIR__ . '/../shared/autoload.php';
@@ -33,15 +35,8 @@ function createPDOConnection()
     ];
 
     try {
-        if (DB_DRIVER === 'sqlite') {
-            $sqliteDir = dirname(SQLITE_PATH);
-            if (!is_dir($sqliteDir)) {
-                mkdir($sqliteDir, 0755, true);
-            }
-
-            $pdo = new PDO('sqlite:' . SQLITE_PATH, null, null, $options);
-            $pdo->exec('PRAGMA foreign_keys = ON');
-            return $pdo;
+        if (DB_DRIVER !== 'mysql') {
+            throw new PDOException('Apenas MySQL é suportado. Defina DB_DRIVER=mysql em api/.env');
         }
 
         $dsn = sprintf(

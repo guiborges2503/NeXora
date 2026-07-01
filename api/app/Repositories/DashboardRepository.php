@@ -32,7 +32,7 @@ class DashboardRepository
              FROM dashboards d
              LEFT JOIN users u ON u.id = d.owner_id
              LEFT JOIN dashboard_meta dm ON dm.dashboard_id = d.id
-             ORDER BY datetime(d.created_at) DESC"
+             ORDER BY " . sqlOrderByDateTime('d.created_at')
         );
 
         return $stmt ? ($stmt->fetchAll() ?: []) : [];

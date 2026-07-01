@@ -36,7 +36,7 @@ export function CreateAiReportPage() {
       id: newId(),
       role: "assistant",
       content:
-        "Descreva o painel que você precisa. Você pode pedir várias análises de uma vez, por exemplo:\n• Vendas totais por região (barras)\n• Ranking de vendedores nos últimos 3 meses\n• Faturamento por produto (tabela)",
+        "Descreva o painel executivo que você precisa. A IA gera um dashboard em DSL (JSON) com KPIs, gráficos, rankings, tabelas, insights e recomendações.\n\nExemplo:\n• Evolução do faturamento mensal\n• Receita por região e ranking de vendedores\n• Top produtos em tabela detalhada",
     },
   ]);
   const [definition, setDefinition] = useState<AiReportDefinition | null>(null);
@@ -88,7 +88,8 @@ export function CreateAiReportPage() {
       setDashboard(result.dashboard);
 
       const widgetCount = result.dashboard.widgets.length;
-      const assistantText = `Painel pronto: **${result.definition.title}** com ${widgetCount} visualização(ões).\n\n${result.definition.description}`;
+      const insightCount = result.definition.insights?.length ?? 0;
+      const assistantText = `Painel executivo pronto: **${result.definition.title}** com ${widgetCount} visualização(ões)${insightCount > 0 ? ` e ${insightCount} insight(s)` : ""}.\n\n${result.definition.description}`;
       setMessages((prev) => [...prev, { id: newId(), role: "assistant", content: assistantText }]);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Não foi possível gerar o relatório.");
@@ -226,6 +227,10 @@ export function CreateAiReportPage() {
                 description={definition.description}
                 businessRules={definition.business_rules}
                 dashboard={dashboard}
+                insights={definition.insights}
+                recommendations={definition.recommendations}
+                filters={definition.filters}
+                theme={definition.theme}
                 compact
               />
             ) : (

@@ -44,7 +44,7 @@ class AiReportRepository
                     INNER JOIN roles ro ON ro.id = ara.role_id
                     WHERE ara.report_id = r.id AND ro.name = :role
                 )
-             ORDER BY datetime(r.updated_at) DESC"
+             ORDER BY " . sqlOrderByDateTime('r.updated_at')
         );
         $stmt->execute([
             'user_id' => $userId,

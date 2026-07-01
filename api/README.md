@@ -1,22 +1,20 @@
-# API NeXora - Backend PHP com SQLite
+# API NeXora - Backend PHP com MySQL
 
-Estrutura base de backend em PHP usando SQLite como banco padrão local, com separação por camadas (Controller, Service, Repository) e scripts de migração/seed.
+Backend em PHP com MySQL, separado por camadas (Controller, Service, Repository).
 
 ## Estrutura
 
 ```
+database/
+├── install_mysql.sql        # Cria todas as tabelas (importar no phpMyAdmin)
+└── db_dialect.php           # Helpers SQL em runtime (relatórios IA)
+
 api/
 ├── app/
 │   ├── Controllers/
 │   ├── Services/
 │   ├── Repositories/
 │   └── Validators/
-├── database/
-│   ├── data/                # Arquivo .sqlite (não versionado)
-│   ├── migrations/          # SQL de estrutura
-│   ├── seeders/             # SQL de dados iniciais
-│   ├── migrate.php          # Runner de migrations
-│   └── seed.php             # Runner de seed
 ├── settings/
 ├── shared/
 ├── logs/
@@ -30,32 +28,19 @@ api/
 
 ## Banco de Dados
 
-Por padrão, o backend usa SQLite:
+O schema MySQL já deve existir no servidor. Configure apenas `api/.env`:
 
-- `DB_DRIVER=sqlite`
-- `SQLITE_PATH=api/database/data/nexora.sqlite`
-
-Você pode trocar para MySQL alterando as variáveis de ambiente (`DB_DRIVER=mysql` e demais variáveis `DB_*`).
-
-## Como iniciar a base de dados
-
-Na raiz do projeto:
-
-```bash
-php api/database/migrate.php
-php api/database/seed.php
+```env
+DB_DRIVER=mysql
+DB_HOST=...
+DB_NAME=...
+DB_USER=...
+DB_PASS=...
 ```
 
-Isso cria tabelas centrais:
+A API **não executa** esse script automaticamente — apenas conecta ao banco existente.
 
-- `users`
-- `roles`
-- `permissions`
-- `user_roles`
-- `role_permissions`
-- `dashboards`
-- `alerts`
-- `audit_logs`
+Para criar as tabelas, importe `database/install_mysql.sql` no phpMyAdmin.
 
 ## Endpoints disponíveis
 

@@ -407,8 +407,12 @@ export function EditAiReportPage() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="bar">Barras</SelectItem>
+                          <SelectItem value="horizontal_bar">Ranking horizontal</SelectItem>
                           <SelectItem value="line">Linha</SelectItem>
+                          <SelectItem value="area">Área</SelectItem>
+                          <SelectItem value="donut">Donut</SelectItem>
                           <SelectItem value="pie">Pizza</SelectItem>
+                          <SelectItem value="heatmap">Heatmap</SelectItem>
                           <SelectItem value="table">Tabela</SelectItem>
                         </SelectContent>
                       </Select>
@@ -543,6 +547,10 @@ export function EditAiReportPage() {
                   description={definition.description}
                   businessRules={definition.business_rules}
                   dashboard={dashboard}
+                  insights={definition.insights}
+                  recommendations={definition.recommendations}
+                  filters={definition.filters}
+                  theme={definition.theme}
                   compact
                 />
               ) : null}

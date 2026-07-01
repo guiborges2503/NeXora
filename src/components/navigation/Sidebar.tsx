@@ -67,13 +67,13 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "relative flex flex-col bg-card border-r border-border transition-all duration-300 flex-shrink-0",
+        "relative flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 flex-shrink-0",
         isOpen ? "w-64" : "w-24"
       )}
     >
       {/* Logo */}
       <div className={cn(
-        "flex items-center justify-center h-24 border-b border-border flex-shrink-0",
+        "flex items-center justify-center h-24 border-b border-sidebar-border flex-shrink-0",
         isOpen ? "px-4" : "px-2"
       )}>
         {isOpen && (
@@ -104,8 +104,8 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
                 isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm shadow-sidebar-primary/20"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               )}
             >
               <Icon className="w-5 h-5 flex-shrink-0" />
@@ -116,7 +116,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
       </nav>
 
       {/* Bottom section: Configurações (expandable) + Logout */}
-      <div className="flex flex-col gap-1 px-3 py-4 border-t border-border">
+      <div className="flex flex-col gap-1 px-3 py-4 border-t border-sidebar-border">
         {!pwaMode && (
           isOpen ? (
             <Collapsible open={configOpen} onOpenChange={setConfigOpen}>
@@ -124,8 +124,8 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
                   isConfigActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 )}
               >
                 <Settings className="w-5 h-5 flex-shrink-0" />
@@ -135,7 +135,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                 />
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="ml-4 mt-1 space-y-0.5 border-l border-border pl-3">
+                <div className="ml-4 mt-1 space-y-0.5 border-l border-sidebar-border pl-3">
                   {configSubItems.map((item) => {
                     const Icon = item.icon;
                     const isActive = location.pathname === item.path;
@@ -147,8 +147,8 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                         className={cn(
                           "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
                           isActive
-                            ? "bg-primary text-primary-foreground"
-                            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                            ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                         )}
                       >
                         <Icon className="w-4 h-4 flex-shrink-0" />
@@ -165,8 +165,8 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                 className={cn(
                   "w-full flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors",
                   isConfigActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                    ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 )}
               >
                 <Settings className="w-5 h-5 flex-shrink-0" />
@@ -182,7 +182,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                         to={item.path}
                         className={cn(
                           "flex items-center gap-3 cursor-pointer",
-                          isActive && "bg-primary text-primary-foreground"
+                          isActive && "bg-sidebar-primary text-sidebar-primary-foreground"
                         )}
                       >
                         <Icon className="w-4 h-4 flex-shrink-0" />
@@ -202,7 +202,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
           }}
           className={cn(
             "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors w-full",
-            "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           )}
         >
           <LogOut className="w-5 h-5 flex-shrink-0" />

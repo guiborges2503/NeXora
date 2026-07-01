@@ -4,8 +4,14 @@ import { Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { API_BASE_URL } from "@/config/api";
-import { setAuthToken } from "@/config/auth";
+import {
+  clearSavedLogin,
+  getSavedLogin,
+  setAuthToken,
+  setSavedLogin,
+} from "@/config/auth";
 
 const LOGIN_BG_URL = `${import.meta.env.BASE_URL}login.png`;
 
@@ -25,8 +31,10 @@ type LoginApiResponse = {
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const savedLogin = getSavedLogin();
+  const [email, setEmail] = useState(savedLogin?.email ?? "");
+  const [password, setPassword] = useState(savedLogin?.password ?? "");
+  const [rememberLogin, setRememberLogin] = useState(savedLogin !== null);
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -74,6 +82,20 @@ export function LoginPage() {
         }),
       });
 
+      const contentType = response.headers.get("content-type") ?? "";
+      if (!contentType.includes("application/json")) {
+        if (response.status === 404) {
+          setErrorMessage(
+            "API não encontrada (404). Confirme que a pasta api/ está publicada no servidor."
+          );
+        } else {
+          setErrorMessage(
+            `Servidor retornou resposta inválida (HTTP ${response.status}). Verifique a pasta api/ e o arquivo api/.env.`
+          );
+        }
+        return;
+      }
+
       const result = (await response.json()) as LoginApiResponse;
 
       if (!response.ok || !result.success || !result.data?.authenticated || !result.data.token) {
@@ -84,13 +106,22 @@ export function LoginPage() {
       setAuthToken(result.data.token);
       const { token: _token, ...userWithoutToken } = result.data;
       localStorage.setItem("nexora_user", JSON.stringify(userWithoutToken));
-      setPassword("");
+
+      if (rememberLogin) {
+        setSavedLogin({ email: normalizedEmail, password });
+      } else {
+        clearSavedLogin();
+      }
+
+      if (!rememberLogin) {
+        setPassword("");
+      }
+
       navigate("/dashboards");
     } catch (_error) {
       setErrorMessage("Não foi possível conectar ao servidor de autenticação.");
     } finally {
       setIsLoading(false);
-      setPassword("");
     }
   }
 
@@ -156,6 +187,23 @@ export function LoginPage() {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
               </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="remember-login"
+                checked={rememberLogin}
+                onCheckedChange={(checked) => {
+                  const shouldRemember = checked === true;
+                  setRememberLogin(shouldRemember);
+                  if (!shouldRemember) {
+                    clearSavedLogin();
+                  }
+                }}
+              />
+              <Label htmlFor="remember-login" className="cursor-pointer text-sm font-normal">
+                Salvar login
+              </Label>
             </div>
 
             {errorMessage ? (

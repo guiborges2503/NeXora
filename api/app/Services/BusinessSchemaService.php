@@ -7,35 +7,35 @@ class BusinessSchemaService
     public function getSchemaDescription(): string
     {
         return <<<'SCHEMA'
-Tabelas disponíveis (SQLite):
+Tabelas disponíveis (MySQL):
 
 1) regions
-   - id INTEGER PK
-   - name TEXT (ex: Sul, Sudeste)
-   - code TEXT (ex: SUL, SE)
+   - id INT PK AUTO_INCREMENT
+   - name VARCHAR (ex: Sul, Sudeste)
+   - code VARCHAR (ex: SUL, SE)
 
 2) products
-   - id INTEGER PK
-   - name TEXT
-   - category TEXT (commercial, marketing, finance, hr, operations, other)
-   - unit_price REAL
+   - id INT PK AUTO_INCREMENT
+   - name VARCHAR
+   - category VARCHAR (commercial, marketing, finance, hr, operations, other)
+   - unit_price DECIMAL(12,2)
 
 3) customers
-   - id INTEGER PK
-   - name TEXT
-   - segment TEXT (geral, enterprise, pme)
-   - region_id INTEGER FK -> regions.id
+   - id INT PK AUTO_INCREMENT
+   - name VARCHAR
+   - segment VARCHAR (geral, enterprise, pme)
+   - region_id INT FK -> regions.id
 
 4) sales
-   - id INTEGER PK
-   - sale_date TEXT (YYYY-MM-DD)
-   - customer_id INTEGER FK -> customers.id
-   - product_id INTEGER FK -> products.id
-   - region_id INTEGER FK -> regions.id
-   - quantity INTEGER
-   - unit_price REAL
-   - total_amount REAL (valor total da venda)
-   - seller_name TEXT
+   - id INT PK AUTO_INCREMENT
+   - sale_date DATE (YYYY-MM-DD)
+   - customer_id INT FK -> customers.id
+   - product_id INT FK -> products.id
+   - region_id INT FK -> regions.id
+   - quantity INT
+   - unit_price DECIMAL(12,2)
+   - total_amount DECIMAL(12,2) (valor total da venda)
+   - seller_name VARCHAR
 
 Relacionamentos:
 - sales.region_id -> regions.id
@@ -44,6 +44,9 @@ Relacionamentos:
 - customers.region_id -> regions.id
 
 Use JOINs quando precisar de nomes legíveis (região, produto, cliente).
+
+Sintaxe SQL: MySQL 8. Use DATE_SUB(CURDATE(), INTERVAL 3 MONTH) para últimos 3 meses.
+Para agrupar por mês: DATE_FORMAT(sale_date, '%Y-%m') AS mes. Não use strftime nem date('now').
 SCHEMA;
     }
 

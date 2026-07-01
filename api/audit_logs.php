@@ -33,7 +33,7 @@ try {
             a.created_at
          FROM audit_logs a
          LEFT JOIN users u ON u.id = a.user_id
-         ORDER BY datetime(a.created_at) DESC"
+         ORDER BY " . sqlOrderByDateTime('a.created_at')
     );
 
     $rows = $stmt ? $stmt->fetchAll() : [];
@@ -63,9 +63,9 @@ try {
         ];
     }
 
-    $today = (int) $db->query("SELECT COUNT(*) FROM audit_logs WHERE date(created_at) = date('now', 'localtime')")->fetchColumn();
-    $week = (int) $db->query("SELECT COUNT(*) FROM audit_logs WHERE datetime(created_at) >= datetime('now', '-7 days')")->fetchColumn();
-    $month = (int) $db->query("SELECT COUNT(*) FROM audit_logs WHERE datetime(created_at) >= datetime('now', '-30 days')")->fetchColumn();
+    $today = (int) $db->query(sqlCountAuditToday())->fetchColumn();
+    $week = (int) $db->query(sqlCountAuditSinceDays(7))->fetchColumn();
+    $month = (int) $db->query(sqlCountAuditSinceDays(30))->fetchColumn();
 
     \Shared\Response::success([
         'items' => $items,

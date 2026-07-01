@@ -23,7 +23,7 @@ class SqlValidator
 
     public function validateAndPrepare(string $sql): string
     {
-        $normalized = trim($sql);
+        $normalized = adaptSqliteSelectToMysql(trim($sql));
         $normalized = preg_replace('/\s+/', ' ', $normalized) ?? $normalized;
 
         if ($normalized === '') {
