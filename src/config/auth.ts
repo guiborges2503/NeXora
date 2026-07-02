@@ -1,11 +1,24 @@
 const TOKEN_KEY = "nexora_token";
 const USER_KEY = "nexora_user";
 const SAVED_LOGIN_KEY = "nexora_saved_login";
+const REMEMBER_LOGIN_KEY = "nexora_remember_login";
 
 export type SavedLoginCredentials = {
   email: string;
   password: string;
 };
+
+export function getRememberLoginPreference(): boolean {
+  return localStorage.getItem(REMEMBER_LOGIN_KEY) === "1";
+}
+
+export function setRememberLoginPreference(remember: boolean): void {
+  if (remember) {
+    localStorage.setItem(REMEMBER_LOGIN_KEY, "1");
+    return;
+  }
+  localStorage.removeItem(REMEMBER_LOGIN_KEY);
+}
 
 export function getAuthToken(): string | null {
   const token = localStorage.getItem(TOKEN_KEY);
@@ -49,6 +62,7 @@ export function setSavedLogin(credentials: SavedLoginCredentials): void {
 
 export function clearSavedLogin(): void {
   localStorage.removeItem(SAVED_LOGIN_KEY);
+  localStorage.removeItem(REMEMBER_LOGIN_KEY);
 }
 
 export function hasAuthSession(): boolean {

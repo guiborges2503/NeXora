@@ -6,7 +6,8 @@
   "scripts": {
     "build": "vite build",
     "build:hostinger": "vite build && node scripts/prepare-hostinger.mjs",
-    "dev": "vite",
+    "dev": "node scripts/dev.mjs",
+    "dev:vite": "vite",
     "dev:api": "php -S 127.0.0.1:8000 -t ."
   },
   "dependencies": {

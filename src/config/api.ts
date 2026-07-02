@@ -3,7 +3,7 @@ import { clearAuthSession, getAuthToken } from "@/config/auth";
 /**
  * API no mesmo domínio do site.
  * Produção: https://nexora.conectaxcon.com.br/api/...
- * Dev local: Vite faz proxy de /api → PHP (npm run dev:api) — só para desenvolvimento.
+ * Dev local: `npm run dev` sobe Vite + PHP; proxy de /api → 127.0.0.1:8000
  */
 export const API_BASE_URL = "/api";
 
