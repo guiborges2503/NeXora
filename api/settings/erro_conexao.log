@@ -1,3 +1,7 @@
 2026-07-01 15:45:21 - Erro de conexão (mysql): SQLSTATE[HY000] [1045] Access denied for user 'u276379167_nexora'@'localhost' (using password: YES)
 2026-07-01 15:47:32 - Erro de conexão (mysql): SQLSTATE[HY000] [1045] Access denied for user 'u276379167_nexora'@'localhost' (using password: YES)
 2026-07-01 15:47:40 - Erro de conexão (mysql): SQLSTATE[HY000] [1045] Access denied for user 'u276379167_nexora'@'localhost' (using password: YES)
+2026-07-02 08:55:08 - Erro de conexão (mysql): SQLSTATE[HY000] [2002] Nenhuma conexão pôde ser feita porque a máquina de destino as recusou ativamente.
+
+2026-07-02 08:55:24 - Erro de conexão (mysql): SQLSTATE[HY000] [2002] Nenhuma conexão pôde ser feita porque a máquina de destino as recusou ativamente.
+

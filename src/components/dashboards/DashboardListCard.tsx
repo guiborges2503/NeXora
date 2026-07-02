@@ -106,10 +106,7 @@ export function DashboardListCard({
 
           <div className="min-w-0 flex-1">
             <div className="flex items-start gap-1.5">
-              <h3
-                className="min-w-0 flex-1 truncate font-semibold text-foreground"
-                title={dashboard.name}
-              >
+              <h3 className="min-w-0 flex-1 break-words font-semibold leading-snug text-foreground">
                 {dashboard.name}
               </h3>
               <DropdownMenu>

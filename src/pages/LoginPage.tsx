@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -8,8 +8,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { API_BASE_URL } from "@/config/api";
 import {
   clearSavedLogin,
+  getRememberLoginPreference,
   getSavedLogin,
   setAuthToken,
+  setRememberLoginPreference,
   setSavedLogin,
 } from "@/config/auth";
 
@@ -34,10 +36,25 @@ export function LoginPage() {
   const savedLogin = getSavedLogin();
   const [email, setEmail] = useState(savedLogin?.email ?? "");
   const [password, setPassword] = useState(savedLogin?.password ?? "");
-  const [rememberLogin, setRememberLogin] = useState(savedLogin !== null);
+  const [rememberLogin, setRememberLogin] = useState(
+    () => getRememberLoginPreference() || savedLogin !== null
+  );
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!rememberLogin) {
+      return;
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !password) {
+      return;
+    }
+
+    setSavedLogin({ email: normalizedEmail, password });
+  }, [email, password, rememberLogin]);
 
   function isHttpsOrLocalApi(baseUrl: string): boolean {
     try {
@@ -108,8 +125,10 @@ export function LoginPage() {
       localStorage.setItem("nexora_user", JSON.stringify(userWithoutToken));
 
       if (rememberLogin) {
+        setRememberLoginPreference(true);
         setSavedLogin({ email: normalizedEmail, password });
       } else {
+        setRememberLoginPreference(false);
         clearSavedLogin();
       }
 
@@ -122,6 +141,23 @@ export function LoginPage() {
       setErrorMessage("Não foi possível conectar ao servidor de autenticação.");
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  function handleRememberLoginChange(checked: boolean | "indeterminate") {
+    const shouldRemember = checked === true;
+    setRememberLogin(shouldRemember);
+    setRememberLoginPreference(shouldRemember);
+
+    if (!shouldRemember) {
+      clearSavedLogin();
+      setPassword("");
+      return;
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (normalizedEmail && password) {
+      setSavedLogin({ email: normalizedEmail, password });
     }
   }
 
@@ -189,22 +225,17 @@ export function LoginPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <label
+              htmlFor="remember-login"
+              className="flex cursor-pointer items-center gap-2"
+            >
               <Checkbox
                 id="remember-login"
                 checked={rememberLogin}
-                onCheckedChange={(checked) => {
-                  const shouldRemember = checked === true;
-                  setRememberLogin(shouldRemember);
-                  if (!shouldRemember) {
-                    clearSavedLogin();
-                  }
-                }}
+                onCheckedChange={handleRememberLoginChange}
               />
-              <Label htmlFor="remember-login" className="cursor-pointer text-sm font-normal">
-                Salvar login
-              </Label>
-            </div>
+              <span className="text-sm font-normal leading-none">Salvar login</span>
+            </label>
 
             {errorMessage ? (
               <p className="text-sm text-destructive">{errorMessage}</p>
