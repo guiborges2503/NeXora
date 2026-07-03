@@ -8,6 +8,15 @@
 
 function getEnvironment()
 {
+    if (php_sapi_name() === 'cli') {
+        $forced = getenv('NEXORA_APP_ENV');
+        if ($forced === 'production' || $forced === 'development') {
+            return $forced;
+        }
+
+        return 'development';
+    }
+
     $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
 
     if (strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false) {

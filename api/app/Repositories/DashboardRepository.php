@@ -138,10 +138,10 @@ class DashboardRepository
         $metaStmt = $this->db->prepare(
             "INSERT INTO dashboard_meta (dashboard_id, embed_url, category, views_count, updated_at)
              VALUES (:dashboard_id, :embed_url, :category, 0, :updated_at)
-             ON CONFLICT(dashboard_id) DO UPDATE SET
-                embed_url = excluded.embed_url,
-                category = excluded.category,
-                updated_at = excluded.updated_at"
+             ON DUPLICATE KEY UPDATE
+                embed_url = VALUES(embed_url),
+                category = VALUES(category),
+                updated_at = VALUES(updated_at)"
         );
         $metaStmt->execute([
             'dashboard_id' => $id,
@@ -165,9 +165,9 @@ class DashboardRepository
         $stmt = $this->db->prepare(
             "INSERT INTO dashboard_meta (dashboard_id, embed_url, category, views_count, updated_at)
              VALUES (:dashboard_id, '', 'other', 1, :updated_at)
-             ON CONFLICT(dashboard_id) DO UPDATE SET
+             ON DUPLICATE KEY UPDATE
                 views_count = COALESCE(views_count, 0) + 1,
-                updated_at = excluded.updated_at"
+                updated_at = VALUES(updated_at)"
         );
         return $stmt->execute([
             'dashboard_id' => $id,

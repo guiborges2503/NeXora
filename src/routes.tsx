@@ -2,7 +2,7 @@ import { createBrowserRouter, Navigate } from "react-router";
 import { type ReactElement } from "react";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { AuthLayout } from "@/components/layouts/AuthLayout";
-import { LoginPage } from "@/pages/LoginPage";
+import { LoginPage } from "@/components/auth/LoginNeXora";
 import { RegisterPage } from "@/pages/RegisterPage";
 import { ForgotPasswordPage } from "@/pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/pages/ResetPasswordPage";

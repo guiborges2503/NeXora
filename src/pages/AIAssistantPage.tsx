@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,7 @@ import { API_BASE_URL } from "@/config/api";
 import {
   getOpenRouterSettings,
   isOpenRouterConfigured,
+  loadOpenRouterSettingsFromServer,
   openRouterChatCompletion,
   OpenRouterConfigurationError,
   type OpenRouterChatMessage,
@@ -28,11 +29,7 @@ import {
   type ApiChatTurn,
 } from "@/config/aiConversationsApi";
 import { fallbackTitleFromMessages, generateSmartConversationTitle } from "@/config/aiConversationTitle";
-
-const SYSTEM_PROMPT = `Você é o assistente de Business Intelligence da plataforma NeXora.
-Responda sempre em português do Brasil, de forma clara e objetiva.
-Quando não houver dados concretos no contexto, diga isso e sugira quais indicadores ou painéis o usuário poderia consultar.
-Use markdown leve quando ajudar (títulos ##, listas, **negrito**).`;
+import { AI_ASSISTANT_SYSTEM_PROMPT, detectDashboardIntent } from "@/config/aiAssistantPrompt";
 
 type ChatTurn = ApiChatTurn;
 
@@ -53,6 +50,7 @@ function shouldOfferSmartTitle(msgs: ChatTurn[]): boolean {
 }
 
 export function AIAssistantPage() {
+  const navigate = useNavigate();
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<ChatTurn[]>([]);
   const [activeDbId, setActiveDbId] = useState<number | null>(null);
@@ -98,7 +96,7 @@ export function AIAssistantPage() {
   }, []);
 
   useEffect(() => {
-    syncSettings();
+    void loadOpenRouterSettingsFromServer().finally(() => syncSettings());
     void refreshConversationList();
     function onUpdate() {
       syncSettings();
@@ -279,10 +277,35 @@ export function AIAssistantPage() {
       const nextAfterUser = [...priorMessages, userTurn];
       setMessages(nextAfterUser);
       setMessage("");
+
+      // 🎨 Modo Designer de Dashboard: pedidos de dashboard/painel/BI
+      // são encaminhados para o gerador de DSL em /reports/create.
+      if (detectDashboardIntent(trimmed)) {
+        const assistantTurn: ChatTurn = {
+          id: newId(),
+          role: "assistant",
+          content:
+            "🎨 Entendido! Vou gerar a estrutura deste dashboard utilizando a DSL do Nexora — com KPIs, gráficos, tabelas e insights.\n\nEstou abrindo o Designer de Dashboards para criar o painel automaticamente…",
+          timeLabel: formatTimeLabel(new Date()),
+        };
+        const finalMessages = [...nextAfterUser, assistantTurn];
+        setMessages(finalMessages);
+
+        const uid = getCurrentUserId();
+        if (uid) {
+          const savedId = await persistThread(finalMessages, dbId);
+          if (savedId !== null) {
+            setActiveDbId(savedId);
+          }
+        }
+        navigate(`/reports/create?prompt=${encodeURIComponent(trimmed)}`);
+        return;
+      }
+
       setIsSending(true);
 
       const historyForApi: OpenRouterChatMessage[] = [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: AI_ASSISTANT_SYSTEM_PROMPT },
         ...nextAfterUser.map((m) => ({ role: m.role, content: m.content }) as OpenRouterChatMessage),
       ];
 
@@ -322,7 +345,7 @@ export function AIAssistantPage() {
         abortRef.current = null;
       }
     },
-    [activeDbId, isSending, messages, persistThread]
+    [activeDbId, isSending, messages, persistThread, navigate]
   );
 
   function handleSubmit() {

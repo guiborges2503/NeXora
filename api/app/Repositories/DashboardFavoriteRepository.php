@@ -39,8 +39,8 @@ class DashboardFavoriteRepository
         $stmt = $this->db->prepare(
             "INSERT INTO dashboard_favorites (user_id, dashboard_id, favorited_at)
              VALUES (:user_id, :dashboard_id, :favorited_at)
-             ON CONFLICT(user_id, dashboard_id) DO UPDATE SET
-                favorited_at = excluded.favorited_at"
+             ON DUPLICATE KEY UPDATE
+                favorited_at = VALUES(favorited_at)"
         );
 
         return $stmt->execute([

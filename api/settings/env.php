@@ -1,7 +1,8 @@
 <?php
 
 /**
- * Carrega variáveis de api/.env (sem dependências externas).
+ * Carrega variáveis opcionais de api/.env (JWT, OpenRouter, e-mail).
+ * O banco de dados NÃO usa .env — veja api/settings/settings.php.
  */
 function loadApiEnvFile(): void
 {
@@ -19,6 +20,10 @@ function loadApiEnvFile(): void
     $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     if ($lines === false) {
         return;
+    }
+
+    if (isset($lines[0])) {
+        $lines[0] = preg_replace('/^\xEF\xBB\xBF/', '', $lines[0]);
     }
 
     foreach ($lines as $line) {
@@ -44,11 +49,10 @@ function loadApiEnvFile(): void
             $value = substr($value, 1, -1);
         }
 
-        if (getenv($key) === false) {
-            putenv("{$key}={$value}");
-            $_ENV[$key] = $value;
-            $_SERVER[$key] = $value;
-        }
+        // .env no servidor tem prioridade sobre variáveis vazias do painel de hospedagem
+        putenv("{$key}={$value}");
+        $_ENV[$key] = $value;
+        $_SERVER[$key] = $value;
     }
 }
 

@@ -3,6 +3,8 @@
 include_once __DIR__ . '/settings/includes.php';
 include_once __DIR__ . '/cors.php';
 
+use App\Support\RoleCatalog;
+
 header('Content-Type: application/json; charset=utf-8');
 setCorsHeaders();
 
@@ -41,8 +43,8 @@ try {
         $roleName = (string) $row['name'];
         $roles[] = [
             'id' => $roleName,
-            'name' => ucfirst($roleName),
-            'description' => (string) $row['description'],
+            'name' => RoleCatalog::label($roleName),
+            'description' => (string) $row['description'] ?: RoleCatalog::description($roleName),
             'users' => (int) $row['users'],
         ];
         $roleNameById[(int) $row['id']] = $roleName;

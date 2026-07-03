@@ -1,10 +1,32 @@
 import { execSync, spawn } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
 import process from "node:process";
 
 const DEV_PORT = 5173;
 const API_PORT = 8000;
 
 const children = [];
+
+function readApiProxyTarget() {
+  try {
+    const envPath = path.join(process.cwd(), ".env.development");
+    const content = fs.readFileSync(envPath, "utf8");
+    const match = content.match(/^VITE_API_PROXY_TARGET=(.+)$/m);
+    return match?.[1]?.trim() || `http://127.0.0.1:${API_PORT}`;
+  } catch {
+    return `http://127.0.0.1:${API_PORT}`;
+  }
+}
+
+function usesLocalApi(target) {
+  try {
+    const url = new URL(target);
+    return url.hostname === "127.0.0.1" || url.hostname === "localhost";
+  } catch {
+    return true;
+  }
+}
 
 function freePort(port) {
   if (process.platform !== "win32") {
@@ -73,10 +95,20 @@ process.on("SIGTERM", () => shutdown(0));
 freePort(API_PORT);
 freePort(DEV_PORT);
 
-console.log(`[dev] API PHP  http://127.0.0.1:${API_PORT}/api/health.php`);
+const apiProxyTarget = readApiProxyTarget();
+const localApi = usesLocalApi(apiProxyTarget);
+
+if (localApi) {
+  console.log(`[dev] API PHP  http://127.0.0.1:${API_PORT}/api/health.php`);
+} else {
+  console.log(`[dev] API proxy → ${apiProxyTarget}/api/`);
+}
+
 console.log(`[dev] Frontend http://127.0.0.1:${DEV_PORT}`);
 console.log("[dev] Ctrl+C encerra API e Vite juntos");
 console.log("");
 
-run("php", ["-S", `127.0.0.1:${API_PORT}`, "-t", "."]);
+if (localApi) {
+  run("php", ["-S", `127.0.0.1:${API_PORT}`, "-t", "."]);
+}
 run("npx", ["vite"]);

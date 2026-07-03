@@ -7,7 +7,7 @@
 include_once __DIR__ . '/env.php';
 include_once __DIR__ . '/app_config.php';
 include_once __DIR__ . '/settings.php';
-require_once __DIR__ . '/../../database/db_dialect.php';
+require_once __DIR__ . '/../database/db_dialect.php';
 
 // Autoload para classes Shared
 require_once __DIR__ . '/../shared/autoload.php';
@@ -26,6 +26,16 @@ if (!$isCliMode) {
 /**
  * Cria conexão PDO com o banco de dados
  */
+function setLastDbConnectionError(?string $message): void
+{
+    $GLOBALS['nexora_last_db_error'] = $message;
+}
+
+function getLastDbConnectionError(): ?string
+{
+    return $GLOBALS['nexora_last_db_error'] ?? null;
+}
+
 function createPDOConnection()
 {
     $options = [
@@ -36,7 +46,19 @@ function createPDOConnection()
 
     try {
         if (DB_DRIVER !== 'mysql') {
-            throw new PDOException('Apenas MySQL é suportado. Defina DB_DRIVER=mysql em api/.env');
+            throw new PDOException('Apenas MySQL é suportado. Defina DB_DRIVER=mysql em api/settings/settings.php');
+        }
+
+        if (
+            function_exists('getEnvironment')
+            && getEnvironment() === 'development'
+            && DB_HOST === ''
+        ) {
+            throw new PDOException(
+                'DB_REMOTE_HOST não configurado. No PC, use o MySQL remoto da Hostinger: '
+                . 'painel → Bancos de dados → MySQL remoto → habilite seu IP e copie o host '
+                . '(ex.: srv1234.hstgr.io). Defina em api/.env ou api/settings/settings.php.'
+            );
         }
 
         $dsn = sprintf(
@@ -49,6 +71,7 @@ function createPDOConnection()
 
         return new PDO($dsn, DB_USER, DB_PASS, $options);
     } catch (PDOException $e) {
+        setLastDbConnectionError($e->getMessage());
         $logFile = __DIR__ . '/erro_conexao.log';
         @file_put_contents(
             $logFile,
@@ -63,6 +86,32 @@ function createPDOConnection()
         );
         return null;
     }
+}
+
+/**
+ * Valida se todas as tabelas obrigatórias existem (resultado em cache por requisição).
+ *
+ * @return array{
+ *     ok: bool,
+ *     required_count: int,
+ *     present_count: int,
+ *     missing: string[],
+ *     present: string[],
+ *     schema_source: string
+ * }
+ */
+function validateDatabaseSchema(PDO $pdo): array
+{
+    static $cachedResult = null;
+
+    if ($cachedResult !== null) {
+        return $cachedResult;
+    }
+
+    $service = new \App\Services\DatabaseSchemaService();
+    $cachedResult = $service->validate($pdo);
+
+    return $cachedResult;
 }
 
 /**

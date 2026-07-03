@@ -17,42 +17,105 @@ import {
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
-  clearOpenRouterSettings,
-  getOpenRouterSettings,
-  saveOpenRouterSettings,
+  clearOpenRouterSettingsRemote,
+  loadOpenRouterSettingsFromServer,
+  persistOpenRouterSettings,
   testOpenRouterConnection,
 } from "@/config/openRouter";
+import { fetchOpenRouterSettings } from "@/config/openRouterApi";
+import { getStoredUser } from "@/config/currentUser";
 
 export function OpenRouterSettingsPage() {
   const [apiKey, setApiKey] = useState("");
-  const [defaultModel, setDefaultModel] = useState("");
+  const [defaultModel, setDefaultModel] = useState("openai/gpt-4o-mini");
   const [showKey, setShowKey] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [source, setSource] = useState<"database" | "env" | "none">("none");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [testLoading, setTestLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<{ variant: "ok" | "error"; message: string } | null>(
     null
   );
 
+  const canEdit = getStoredUser()?.role === "admin";
+
   useEffect(() => {
-    const s = getOpenRouterSettings();
-    setApiKey(s.apiKey);
-    setDefaultModel(s.defaultModel);
+    let active = true;
+
+    (async () => {
+      setLoading(true);
+      setErrorMessage(null);
+      try {
+        const [settings, remote] = await Promise.all([
+          loadOpenRouterSettingsFromServer(),
+          fetchOpenRouterSettings().catch(() => null),
+        ]);
+        if (!active) return;
+        setApiKey(settings.apiKey);
+        setDefaultModel(settings.defaultModel);
+        if (remote) {
+          setSource(remote.source);
+        }
+      } catch (e) {
+        if (!active) return;
+        setErrorMessage(e instanceof Error ? e.message : "Não foi possível carregar as configurações.");
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
-  function handleSave() {
-    saveOpenRouterSettings({
-      apiKey: apiKey.trim(),
-      defaultModel: defaultModel.trim() || "openai/gpt-4o-mini",
-    });
-    setSavedAt(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
+  async function handleSave() {
+    if (!canEdit) {
+      setErrorMessage("Apenas administradores podem alterar esta configuração.");
+      return;
+    }
+
+    setSaving(true);
+    setErrorMessage(null);
+    setTestResult(null);
+    try {
+      const saved = await persistOpenRouterSettings({
+        apiKey: apiKey.trim(),
+        defaultModel: defaultModel.trim() || "openai/gpt-4o-mini",
+      });
+      setApiKey(saved.apiKey);
+      setDefaultModel(saved.defaultModel);
+      setSource("database");
+      setSavedAt(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
+    } catch (e) {
+      setErrorMessage(e instanceof Error ? e.message : "Falha ao salvar configuração.");
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function handleClear() {
-    clearOpenRouterSettings();
-    setApiKey("");
-    setDefaultModel("openai/gpt-4o-mini");
-    setSavedAt(null);
+  async function handleClear() {
+    if (!canEdit) {
+      setErrorMessage("Apenas administradores podem alterar esta configuração.");
+      return;
+    }
+
+    setSaving(true);
+    setErrorMessage(null);
     setTestResult(null);
+    try {
+      await clearOpenRouterSettingsRemote();
+      setApiKey("");
+      setDefaultModel("openai/gpt-4o-mini");
+      setSource("none");
+      setSavedAt(null);
+    } catch (e) {
+      setErrorMessage(e instanceof Error ? e.message : "Falha ao limpar configuração.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleTestConnection() {
@@ -85,11 +148,48 @@ export function OpenRouterSettingsPage() {
             Configuração da API OpenRouter
           </CardTitle>
           <CardDescription>
-            Informe sua chave para usar modelos via OpenRouter no assistente e integrações. A chave fica
-            armazenada apenas neste navegador (localStorage).
+            Chave e modelo usados pelo assistente, relatórios IA e integrações. Os dados são salvos no
+            banco de dados e sincronizados neste navegador.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {loading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Carregando configurações...
+            </div>
+          ) : null}
+
+          {!canEdit ? (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Somente leitura</AlertTitle>
+              <AlertDescription>
+                Apenas administradores podem alterar a chave OpenRouter. Você pode visualizar e testar a
+                configuração atual.
+              </AlertDescription>
+            </Alert>
+          ) : null}
+
+          {source === "env" ? (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Chave definida no servidor (.env)</AlertTitle>
+              <AlertDescription>
+                A chave atual vem de OPENROUTER_API_KEY no arquivo api/.env. Salve aqui para persistir no
+                banco de dados.
+              </AlertDescription>
+            </Alert>
+          ) : null}
+
+          {errorMessage ? (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Erro</AlertTitle>
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
+          ) : null}
+
           <div className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <Label htmlFor="openrouter-key">Chave da API</Label>
@@ -111,6 +211,7 @@ export function OpenRouterSettingsPage() {
                 placeholder="sk-or-v1-..."
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
+                disabled={!canEdit || loading}
                 className="bg-input-background border-border font-mono text-sm"
               />
               <Button
@@ -136,6 +237,7 @@ export function OpenRouterSettingsPage() {
               placeholder="openai/gpt-4o-mini"
               value={defaultModel}
               onChange={(e) => setDefaultModel(e.target.value)}
+              disabled={!canEdit || loading}
               className="bg-input-background border-border font-mono text-sm"
             />
             <p className="text-xs text-muted-foreground">
@@ -145,15 +247,19 @@ export function OpenRouterSettingsPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <Button type="button" onClick={handleSave}>
-              <Save className="w-4 h-4 mr-2" />
+            <Button type="button" onClick={handleSave} disabled={!canEdit || loading || saving}>
+              {saving ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4 mr-2" />
+              )}
               Salvar
             </Button>
             <Button
               type="button"
               variant="outline"
               onClick={handleTestConnection}
-              disabled={testLoading || !apiKey.trim()}
+              disabled={testLoading || !apiKey.trim() || loading}
             >
               {testLoading ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -162,7 +268,12 @@ export function OpenRouterSettingsPage() {
               )}
               Testar conexão
             </Button>
-            <Button type="button" variant="outline" onClick={handleClear}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleClear}
+              disabled={!canEdit || loading || saving}
+            >
               <Trash2 className="w-4 h-4 mr-2" />
               Limpar configuração
             </Button>

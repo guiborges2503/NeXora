@@ -100,13 +100,13 @@ class UserProfileRepository
         $upsertProfileStmt = $this->db->prepare(
             "INSERT INTO user_profiles (user_id, first_name, last_name, phone, job_title, avatar_url, updated_at)
              VALUES (:user_id, :first_name, :last_name, :phone, :job_title, :avatar_url, :updated_at)
-             ON CONFLICT(user_id) DO UPDATE SET
-                first_name = excluded.first_name,
-                last_name = excluded.last_name,
-                phone = excluded.phone,
-                job_title = excluded.job_title,
-                avatar_url = excluded.avatar_url,
-                updated_at = excluded.updated_at"
+             ON DUPLICATE KEY UPDATE
+                first_name = VALUES(first_name),
+                last_name = VALUES(last_name),
+                phone = VALUES(phone),
+                job_title = VALUES(job_title),
+                avatar_url = VALUES(avatar_url),
+                updated_at = VALUES(updated_at)"
         );
         $upsertProfileStmt->execute([
             'user_id' => $userId,
