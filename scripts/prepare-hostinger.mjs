@@ -10,7 +10,6 @@ const apiDest = path.join(distDir, "api");
 const excludedPaths = new Set([
   ".env",
   "tests",
-  "database",
   "logs/erro_conexao.log",
   "settings/erro_conexao.log",
 ]);
@@ -86,14 +85,18 @@ ESTRUTURA CORRETA em public_html:
       ├── app/
       ├── shared/
       ├── settings/
-      └── .env                ← criar no servidor (copiar de .env.example)
+      ├── database/
+      │   └── db_dialect.php   ← obrigatório (sem isso a API retorna HTTP 500)
+      └── settings/
+          └── settings.php     ← credenciais MySQL (bloco production)
+      └── .env                ← opcional (JWT, OpenRouter — NÃO é o banco)
 
 PASSO A PASSO (Gerenciador de Arquivos):
   1. Apague o conteúdo antigo de public_html/api/ (se estiver vazio ou incompleto)
   2. Envie TODO o conteúdo da pasta local "dist/api/" para "public_html/api/"
      (não envie a pasta "dist" inteira para dentro do public_html)
   3. Envie index.html, assets/ e .htaccess da pasta "dist/" para a RAIZ de public_html/
-  4. Crie public_html/api/.env com credenciais MySQL do painel Hostinger
+  4. Edite public_html/api/settings/settings.php → DB_PASS com a senha MySQL da Hostinger
   5. Teste: https://nexora.conectaxcon.com.br/api/health.php
      Deve aparecer JSON com "database": "connected"
 
@@ -104,7 +107,6 @@ NÃO faça:
 
 fs.writeFileSync(path.join(distDir, "PUBLICAR-NA-HOSTINGER.txt"), deployGuide, "utf8");
 
-console.log("[OK] dist/api/ pronto para publicação.");
-console.log("[OK] Leia dist/PUBLICAR-NA-HOSTINGER.txt");
-console.log("");
-console.log("Teste após enviar: https://nexora.conectaxcon.com.br/api/health.php");
+console.log("[OK] dist/api/ incluída no pacote de publicação.");
+console.log("[OK] Após o deploy, teste: /api/health.php");
+console.log("[OK] Após o deploy, edite api/settings/settings.php (DB_PASS) e teste /api/health.php");

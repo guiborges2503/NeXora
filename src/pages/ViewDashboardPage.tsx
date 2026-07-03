@@ -92,10 +92,17 @@ export function ViewDashboardPage() {
           setDashboard({ ...data, id: Number(data.id) });
         }
 
-        await apiPatch<DashboardDetail, { action: "increment_view" }>(
-          `/dashboards.php?id=${id}`,
-          { action: "increment_view" }
-        );
+        try {
+          const updated = await apiPatch<DashboardDetail, { action: "increment_view" }>(
+            `/dashboards.php?id=${id}`,
+            { action: "increment_view" }
+          );
+          if (mounted) {
+            setDashboard({ ...updated, id: Number(updated.id) });
+          }
+        } catch {
+          // Contagem de visualizações é secundária — não bloqueia a página.
+        }
       } catch (error) {
         if (mounted) {
           setErrorMessage(

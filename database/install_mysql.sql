@@ -13,6 +13,7 @@ SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';
 /*
 DROP TABLE IF EXISTS ai_report_role_access;
 DROP TABLE IF EXISTS ai_reports;
+DROP TABLE IF EXISTS openrouter_settings;
 DROP TABLE IF EXISTS sales;
 DROP TABLE IF EXISTS customers;
 DROP TABLE IF EXISTS products;
@@ -251,6 +252,18 @@ CREATE TABLE IF NOT EXISTS ai_report_role_access (
     FOREIGN KEY (report_id) REFERENCES ai_reports(id) ON DELETE CASCADE,
     FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS openrouter_settings (
+    id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
+    api_key VARCHAR(512) NOT NULL DEFAULT '',
+    default_model VARCHAR(128) NOT NULL DEFAULT 'openai/gpt-4o-mini',
+    updated_at DATETIME NOT NULL,
+    updated_by INT NULL,
+    FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT IGNORE INTO openrouter_settings (id, api_key, default_model, updated_at)
+VALUES (1, '', 'openai/gpt-4o-mini', NOW());
 
 CREATE INDEX idx_ai_reports_owner_id ON ai_reports(owner_id);
 

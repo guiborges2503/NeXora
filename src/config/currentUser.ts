@@ -8,6 +8,8 @@ export type StoredUser = {
   authenticated?: boolean;
 };
 
+export { getRoleLabel } from "@/config/roles";
+
 export function getStoredUser(): StoredUser | null {
   try {
     const rawUser = localStorage.getItem("nexora_user");
@@ -28,11 +30,4 @@ export function getUserInitials(name?: string): string {
   }
 
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-}
-
-export function getRoleLabel(role?: string): string {
-  if (role === "admin") return "Administrador";
-  if (role === "manager") return "Gestor";
-  if (role === "viewer") return "Colaborador";
-  return "Usuário";
 }

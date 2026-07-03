@@ -3,7 +3,6 @@
 $creds = [
     ['root', ''],
     ['root', 'root'],
-    ['u276379167_nexora', 'c$2+iaxy3F#'],
 ];
 
 foreach ($creds as [$user, $pass]) {

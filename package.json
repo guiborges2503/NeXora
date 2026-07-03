@@ -4,11 +4,13 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "build": "vite build",
-    "build:hostinger": "vite build && node scripts/prepare-hostinger.mjs",
+    "build": "vite build && node scripts/prepare-hostinger.mjs",
+    "build:vite": "vite build",
+    "build:hostinger": "npm run build",
     "dev": "node scripts/dev.mjs",
     "dev:vite": "vite",
-    "dev:api": "php -S 127.0.0.1:8000 -t ."
+    "dev:api": "php -S 127.0.0.1:8000 -t .",
+    "schema:check": "php api/tests/schema_check.php"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

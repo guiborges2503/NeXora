@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,6 +50,20 @@ export function CreateAiReportPage() {
 
   const configured = isOpenRouterConfigured();
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const autoPromptHandled = useRef(false);
+
+  // Pedido vindo do assistente (/ai-assistant, Modo Designer de Dashboard):
+  // gera a prévia automaticamente a partir de ?prompt=.
+  useEffect(() => {
+    const incoming = searchParams.get("prompt")?.trim();
+    if (!incoming || autoPromptHandled.current) return;
+    autoPromptHandled.current = true;
+    setSearchParams({}, { replace: true });
+    void runGeneration(incoming);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   const conversationForApi = useMemo(
     () =>
       messages
@@ -65,8 +79,7 @@ export function CreateAiReportPage() {
     });
   }
 
-  async function handleGenerate() {
-    const prompt = message.trim();
+  async function runGeneration(prompt: string) {
     if (!prompt) return;
     if (!configured) {
       setErrorMessage("Configure a chave OpenRouter em Configurações > OpenRouter.");
@@ -96,6 +109,10 @@ export function CreateAiReportPage() {
     } finally {
       setIsGenerating(false);
     }
+  }
+
+  async function handleGenerate() {
+    await runGeneration(message.trim());
   }
 
   async function handleSave() {

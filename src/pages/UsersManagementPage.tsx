@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useEffect, useMemo, useState } from "react";
 import {
   Table,
@@ -26,6 +27,7 @@ import {
 import { Search, Plus, MoreVertical, Mail, Shield } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "@/config/api";
+import { APP_ROLES, getRoleLabel, type AppRole } from "@/config/roles";
 import {
   Dialog,
   DialogContent,
@@ -40,12 +42,28 @@ type UserItem = {
   name: string;
   email: string;
   status: "active" | "inactive";
-  role: "admin" | "manager" | "viewer";
+  role: AppRole;
   created_at: string;
+};
+
+type RoleOption = {
+  id: AppRole;
+  label: string;
+  description: string;
+};
+
+type PermissionsResponse = {
+  roles: Array<{
+    id: string;
+    name: string;
+    description: string;
+    users: number;
+  }>;
 };
 
 export function UsersManagementPage() {
   const [users, setUsers] = useState<UserItem[]>([]);
+  const [roleOptions, setRoleOptions] = useState<RoleOption[]>(APP_ROLES);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -60,9 +78,33 @@ export function UsersManagementPage() {
     name: "",
     email: "",
     password: "",
-    role: "viewer" as "admin" | "manager" | "viewer",
+    role: "viewer" as AppRole,
     status: "active" as "active" | "inactive",
   });
+
+  async function loadRoleOptions() {
+    try {
+      const data = await apiGet<PermissionsResponse>("/permissions.php");
+      const options = data.roles
+        .filter((role): role is PermissionsResponse["roles"][number] & { id: AppRole } =>
+          APP_ROLES.some((item) => item.id === role.id)
+        )
+        .map((role) => {
+          const fallback = APP_ROLES.find((item) => item.id === role.id);
+          return {
+            id: role.id as AppRole,
+            label: fallback?.label ?? role.name,
+            description: fallback?.description ?? role.description,
+          };
+        });
+
+      if (options.length > 0) {
+        setRoleOptions(options);
+      }
+    } catch {
+      setRoleOptions(APP_ROLES);
+    }
+  }
 
   async function loadUsers() {
     setErrorMessage("");
@@ -86,6 +128,7 @@ export function UsersManagementPage() {
   useEffect(() => {
     let mounted = true;
     if (mounted) {
+      void loadRoleOptions();
       void loadUsers();
     }
     return () => {
@@ -113,12 +156,6 @@ export function UsersManagementPage() {
     if (parts.length === 0) return "?";
     if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
     return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-  }
-
-  function roleLabel(role: UserItem["role"]): string {
-    if (role === "admin") return "Administrador";
-    if (role === "manager") return "Gestor";
-    return "Colaborador";
   }
 
   function resetForm() {
@@ -243,9 +280,11 @@ export function UsersManagementPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os perfis</SelectItem>
-            <SelectItem value="admin">Admin</SelectItem>
-            <SelectItem value="manager">Gestor</SelectItem>
-            <SelectItem value="viewer">Colaborador</SelectItem>
+            {roleOptions.map((role) => (
+              <SelectItem key={role.id} value={role.id}>
+                {role.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -318,7 +357,7 @@ export function UsersManagementPage() {
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <Shield className="w-4 h-4 text-muted-foreground" />
-                    <span>{roleLabel(user.role)}</span>
+                    <span>{getRoleLabel(user.role)}</span>
                   </div>
                 </TableCell>
                 <TableCell>
@@ -392,38 +431,55 @@ export function UsersManagementPage() {
               value={form.email}
               onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
             />
-            <Input
-              placeholder={
-                editingUserId === null ? "Senha (mín. 6 caracteres)" : "Nova senha (opcional)"
-              }
-              type="password"
-              value={form.password}
-              onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
-            />
-            <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="user-password">
+                {editingUserId === null ? "Senha" : "Nova senha (opcional)"}
+              </Label>
+              <Input
+                id="user-password"
+                placeholder={
+                  editingUserId === null ? "Senha (mín. 6 caracteres)" : "Deixe em branco para manter"
+                }
+                type="password"
+                value={form.password}
+                onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="user-role">Perfil</Label>
               <Select
                 value={form.role}
                 onValueChange={(value) =>
-                  setForm((prev) => ({ ...prev, role: value as UserItem["role"] }))
+                  setForm((prev) => ({ ...prev, role: value as AppRole }))
                 }
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Perfil" />
+                <SelectTrigger id="user-role">
+                  <SelectValue placeholder="Selecione o perfil" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">Administrador</SelectItem>
-                  <SelectItem value="manager">Gestor</SelectItem>
-                  <SelectItem value="viewer">Colaborador</SelectItem>
+                  {roleOptions.map((role) => (
+                    <SelectItem key={role.id} value={role.id}>
+                      <div className="flex flex-col items-start">
+                        <span>{role.label}</span>
+                        {role.description ? (
+                          <span className="text-xs text-muted-foreground">{role.description}</span>
+                        ) : null}
+                      </div>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="user-status">Status</Label>
               <Select
                 value={form.status}
                 onValueChange={(value) =>
                   setForm((prev) => ({ ...prev, status: value as UserItem["status"] }))
                 }
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Status" />
+                <SelectTrigger id="user-status">
+                  <SelectValue placeholder="Selecione o status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="active">Ativo</SelectItem>

@@ -34,6 +34,14 @@ class Database
             if ($this->connection === null) {
                 throw new \RuntimeException('Falha ao conectar ao banco de dados');
             }
+
+            $schema = validateDatabaseSchema($this->connection);
+            if (!$schema['ok']) {
+                throw new \RuntimeException(
+                    'Schema incompleto. Tabelas faltando: ' . implode(', ', $schema['missing'])
+                    . '. Importe database/install_mysql.sql no phpMyAdmin.'
+                );
+            }
         }
 
         return $this->connection;
