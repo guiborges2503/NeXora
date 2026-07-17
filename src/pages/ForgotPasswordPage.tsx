@@ -85,9 +85,9 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-md space-y-8">
+    <div className="nx-auth-shell min-h-screen flex">
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
+        <div className="nx-auth-panel w-full max-w-md space-y-8">
           <div className="w-full flex justify-center">
             <img src={logoImg} alt="NeXora" className="w-80 max-w-full object-contain" />
           </div>
@@ -131,7 +131,7 @@ export function ForgotPasswordPage() {
         </div>
       </div>
 
-      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-primary/10 via-primary/5 to-background items-center justify-center p-8">
+      <div className="hidden lg:flex flex-1 items-center justify-center p-8">
         <div className="max-w-lg space-y-6 text-center">
           <div className="flex items-center justify-center mx-auto">
             <img src={logotipoImg} alt="NeXora" className="w-80 max-w-full object-contain" />

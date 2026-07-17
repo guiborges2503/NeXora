@@ -208,7 +208,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
   return (
     <header
       className={cn(
-        "h-16 border-b border-border bg-card px-6 flex items-center justify-between",
+        "relative z-10 h-16 border-b border-border bg-card/75 px-6 flex items-center justify-between shadow-sm shadow-primary/5 backdrop-blur-2xl",
         pwaMode && "h-14 px-3",
       )}
     >
@@ -223,7 +223,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
         )}
         {routeMeta ? (
           <div className="min-w-0">
-            <h1 className={cn("text-xl font-semibold leading-tight", pwaMode && "text-base")}>
+            <h1 className={cn("font-display text-xl font-bold leading-tight", pwaMode && "text-base")}>
               {routeMeta.title}
             </h1>
             <p className={cn("text-sm text-muted-foreground truncate", pwaMode && "hidden")}>

@@ -31,7 +31,6 @@ export interface LoginNeXoraProps {
 const LOGO_URL = `${import.meta.env.BASE_URL}logo.png`;
 
 const GLOBAL_CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Manrope:wght@400;500;600;700&display=swap');
 @keyframes nx-rise{from{opacity:0;transform:translateY(22px) scale(.97)}to{opacity:1;transform:none}}
 @keyframes nx-floatA{0%,100%{transform:translateY(0)}50%{transform:translateY(-15px)}}
 @keyframes nx-floatB{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
@@ -52,8 +51,8 @@ const GLOBAL_CSS = `
 
 const glass: React.CSSProperties = {
   borderRadius: 16,
-  background: "rgba(23,15,40,.72)",
-  border: "1px solid rgba(255,255,255,.09)",
+  background: "var(--card)",
+  border: "1px solid var(--border)",
   backdropFilter: "blur(14px)",
   WebkitBackdropFilter: "blur(14px)",
   boxShadow: "0 24px 50px -18px rgba(0,0,0,.7)",
@@ -67,8 +66,8 @@ const barBase: React.CSSProperties = {
 
 export function LoginNeXora({
   brandName = "NeXora",
-  accent = "#8b5cf6",
-  accent2 = "#ec4899",
+  accent = "var(--primary)",
+  accent2 = "var(--primary-2)",
   reduceMotion = false,
   email,
   password,
@@ -128,7 +127,7 @@ export function LoginNeXora({
     minHeight: "100vh",
     width: "100%",
     overflow: "hidden",
-    background: "radial-gradient(130% 100% at 82% 8%, #1a1030 0%, #0e0920 42%, #0b0714 100%)",
+    background: "radial-gradient(130% 100% at 82% 8%, #1a1030 0%, #0e0920 42%, var(--background) 100%)",
     color: "#f4f1fb",
     fontFamily: "'Manrope',system-ui,sans-serif",
     WebkitFontSmoothing: "antialiased",
@@ -138,7 +137,7 @@ export function LoginNeXora({
   } as React.CSSProperties;
 
   return (
-    <div ref={rootRef} className="nx-root" style={rootStyle}>
+    <div ref={rootRef} className="nx-root dark" style={rootStyle}>
       <style>{GLOBAL_CSS}</style>
 
       <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at 78% 20%, color-mix(in oklch, var(--accent) 32%, transparent) 0%, transparent 40%)", pointerEvents: "none" }} />
@@ -196,7 +195,7 @@ export function LoginNeXora({
             <div style={{ display: "flex" }}>
               <div style={{ width: 34, height: 34, borderRadius: "50%", border: "2px solid #14092a", background: "linear-gradient(135deg,#7c6cf0,#c026d3)" }} />
               <div style={{ width: 34, height: 34, borderRadius: "50%", border: "2px solid #14092a", background: "linear-gradient(135deg,#22d3ee,#7c6cf0)", marginLeft: -11 }} />
-              <div style={{ width: 34, height: 34, borderRadius: "50%", border: "2px solid #14092a", background: "linear-gradient(135deg,#f59e0b,#ec4899)", marginLeft: -11 }} />
+              <div style={{ width: 34, height: 34, borderRadius: "50%", border: "2px solid #14092a", background: "linear-gradient(135deg,#22d3ee,#8b5cf6)", marginLeft: -11 }} />
             </div>
             <span style={{ fontSize: 13.5, color: "rgba(214,205,236,.6)", lineHeight: 1.4 }}>
               Mais de 2.400 times de dados<br />já decidem com a {brandName}

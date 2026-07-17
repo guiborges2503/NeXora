@@ -269,13 +269,13 @@ export function UsersManagementPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Buscar usuários..."
-            className="pl-10 bg-card border-border"
+            className="pl-10"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
         </div>
         <Select value={roleFilter} onValueChange={setRoleFilter}>
-          <SelectTrigger className="w-48 bg-card border-border">
+          <SelectTrigger className="w-48 bg-card/60 backdrop-blur-md">
             <SelectValue placeholder="Todos os perfis" />
           </SelectTrigger>
           <SelectContent>
@@ -288,7 +288,7 @@ export function UsersManagementPage() {
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-48 bg-card border-border">
+          <SelectTrigger className="w-48 bg-card/60 backdrop-blur-md">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -300,7 +300,7 @@ export function UsersManagementPage() {
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border bg-card">
+      <div className="nx-glass overflow-hidden rounded-xl">
         <Table>
           <TableHeader>
             <TableRow>

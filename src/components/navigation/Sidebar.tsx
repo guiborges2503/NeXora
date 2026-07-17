@@ -67,7 +67,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "relative flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 flex-shrink-0",
+        "relative z-20 flex flex-col border-r border-sidebar-border bg-sidebar/80 shadow-2xl shadow-primary/5 backdrop-blur-2xl transition-all duration-300 flex-shrink-0",
         isOpen ? "w-64" : "w-24"
       )}
     >
@@ -104,7 +104,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
                 isActive
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm shadow-sidebar-primary/20"
+                  ? "bg-gradient-to-r from-primary to-primary-2 text-sidebar-primary-foreground shadow-lg shadow-primary/20"
                   : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               )}
             >
@@ -124,7 +124,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
                   isConfigActive
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                    ? "bg-gradient-to-r from-primary to-primary-2 text-sidebar-primary-foreground shadow-lg shadow-primary/20"
                     : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 )}
               >
@@ -147,7 +147,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                         className={cn(
                           "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
                           isActive
-                            ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                            ? "bg-gradient-to-r from-primary to-primary-2 text-sidebar-primary-foreground"
                             : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                         )}
                       >
@@ -165,7 +165,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                 className={cn(
                   "w-full flex items-center justify-center px-3 py-2.5 rounded-lg transition-colors",
                   isConfigActive
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                    ? "bg-gradient-to-r from-primary to-primary-2 text-sidebar-primary-foreground shadow-lg shadow-primary/20"
                     : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 )}
               >
@@ -182,7 +182,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                         to={item.path}
                         className={cn(
                           "flex items-center gap-3 cursor-pointer",
-                          isActive && "bg-sidebar-primary text-sidebar-primary-foreground"
+                          isActive && "bg-gradient-to-r from-primary to-primary-2 text-sidebar-primary-foreground"
                         )}
                       >
                         <Icon className="w-4 h-4 flex-shrink-0" />

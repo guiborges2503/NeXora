@@ -43,7 +43,7 @@ const bentoItems = [
     title: "Relatórios com IA",
     text: "Gere múltiplos gráficos e KPIs a partir de uma pergunta em linguagem natural.",
     className: "md:col-span-1",
-    accent: "from-fuchsia-500/20 to-purple-500/5",
+    accent: "from-violet-500/20 to-cyan-500/5",
   },
   {
     icon: LineChart,
@@ -150,7 +150,7 @@ function DashboardMockup() {
           <div className="flex flex-col items-center justify-center rounded-xl border border-white/10 bg-white/5 p-3 sm:col-span-2">
             <PieChart className="mb-2 h-8 w-8 text-cyan-400/80" />
             <p className="text-center text-xs text-white/55">Mix por categoria</p>
-            <div className="mt-2 h-14 w-14 rounded-full border-[6px] border-violet-500 border-r-cyan-400 border-b-transparent border-l-fuchsia-400" />
+            <div className="mt-2 h-14 w-14 rounded-full border-[6px] border-violet-500 border-r-cyan-400 border-b-transparent border-l-sky-400" />
           </div>
         </div>
         <div className="border-t border-white/10 bg-violet-500/10 px-4 py-3">
