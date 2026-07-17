@@ -164,7 +164,7 @@ export function HomePage() {
       finance: "text-teal-600 dark:text-teal-400",
       hr: "text-violet-600 dark:text-violet-400",
       operations: "text-orange-600 dark:text-orange-400",
-      other: "text-slate-600 dark:text-slate-400",
+      other: "text-muted-foreground",
     } as const;
     return mapping[category];
   }

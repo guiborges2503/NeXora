@@ -102,7 +102,7 @@ export const KPI_ACCENTS = [
   { stroke: "#3b82f6", fill: "rgba(59,130,246,0.15)", icon: "rgba(59,130,246,0.2)" },
   { stroke: "#14b8a6", fill: "rgba(20,184,166,0.15)", icon: "rgba(20,184,166,0.2)" },
   { stroke: "#f97316", fill: "rgba(249,115,22,0.15)", icon: "rgba(249,115,22,0.2)" },
-  { stroke: "#ec4899", fill: "rgba(236,72,153,0.15)", icon: "rgba(236,72,153,0.2)" },
+  { stroke: "#22d3ee", fill: "rgba(34,211,238,0.15)", icon: "rgba(34,211,238,0.2)" },
   { stroke: "#eab308", fill: "rgba(234,179,8,0.15)", icon: "rgba(234,179,8,0.2)" },
 ] as const;
 
@@ -112,9 +112,9 @@ export const CHART_NEON_PALETTE = [
   "#14b8a6",
   "#f97316",
   "#eab308",
-  "#ec4899",
-  "#6366f1",
   "#22d3ee",
+  "#6366f1",
+  "#06b6d4",
 ];
 
-export const INSIGHT_ICONS = ["#a855f7", "#3b82f6", "#14b8a6", "#f97316", "#ec4899"] as const;
+export const INSIGHT_ICONS = ["#a855f7", "#3b82f6", "#14b8a6", "#f97316", "#22d3ee"] as const;
