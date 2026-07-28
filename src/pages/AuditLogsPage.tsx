@@ -202,116 +202,118 @@ export function AuditLogsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-end">
-        <Button size="lg" variant="outline" onClick={exportCsv}>
-          <Download className="w-4 h-4 mr-2" />
+      <div className="flex items-center justify-stretch sm:justify-end">
+        <Button size="default" variant="outline" className="w-full sm:w-auto" onClick={exportCsv}>
+          <Download className="mr-2 h-4 w-4 shrink-0" />
           Exportar Logs
         </Button>
       </div>
 
       {/* Filters */}
-      <Card className="p-4">
-        <div className="flex flex-wrap gap-4">
-          <div className="relative flex-1 min-w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+      <Card className="p-3 sm:p-4">
+        <div className="flex flex-col gap-3">
+          <div className="relative min-w-0 w-full">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Buscar logs..."
-              className="pl-10 bg-background border-border"
+              className="border-border bg-background pl-10"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
           </div>
-          <Select
-            value={typeFilter}
-            onValueChange={(value) => {
-              setTypeFilter(value);
-              setCurrentPage(1);
-            }}
-          >
-            <SelectTrigger className="w-48 bg-background border-border">
-              <SelectValue placeholder="Tipo de ação" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas as ações</SelectItem>
-              <SelectItem value="create">{getActionLabel("create")}</SelectItem>
-              <SelectItem value="update">{getActionLabel("update")}</SelectItem>
-              <SelectItem value="delete">{getActionLabel("delete")}</SelectItem>
-              <SelectItem value="read">{getActionLabel("read")}</SelectItem>
-              <SelectItem value="login">{getActionLabel("login")}</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select
-            value={userFilter}
-            onValueChange={(value) => {
-              setUserFilter(value);
-              setCurrentPage(1);
-            }}
-          >
-            <SelectTrigger className="w-48 bg-background border-border">
-              <SelectValue placeholder="Usuário" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os usuários</SelectItem>
-              {uniqueUsers.map((user) => (
-                <SelectItem key={user} value={user}>
-                  {user}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={periodFilter}
-            onValueChange={(value) => {
-              setPeriodFilter(value);
-              setCurrentPage(1);
-            }}
-          >
-            <SelectTrigger className="w-48 bg-background border-border">
-              <SelectValue placeholder="Período" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todo período</SelectItem>
-              <SelectItem value="today">Hoje</SelectItem>
-              <SelectItem value="7d">Últimos 7 dias</SelectItem>
-              <SelectItem value="30d">Últimos 30 dias</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-4">
+            <Select
+              value={typeFilter}
+              onValueChange={(value) => {
+                setTypeFilter(value);
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger className="w-full border-border bg-background">
+                <SelectValue placeholder="Tipo de ação" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as ações</SelectItem>
+                <SelectItem value="create">{getActionLabel("create")}</SelectItem>
+                <SelectItem value="update">{getActionLabel("update")}</SelectItem>
+                <SelectItem value="delete">{getActionLabel("delete")}</SelectItem>
+                <SelectItem value="read">{getActionLabel("read")}</SelectItem>
+                <SelectItem value="login">{getActionLabel("login")}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={userFilter}
+              onValueChange={(value) => {
+                setUserFilter(value);
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger className="w-full border-border bg-background">
+                <SelectValue placeholder="Usuário" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os usuários</SelectItem>
+                {uniqueUsers.map((user) => (
+                  <SelectItem key={user} value={user}>
+                    {user}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={periodFilter}
+              onValueChange={(value) => {
+                setPeriodFilter(value);
+                setCurrentPage(1);
+              }}
+            >
+              <SelectTrigger className="w-full border-border bg-background">
+                <SelectValue placeholder="Período" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todo período</SelectItem>
+                <SelectItem value="today">Hoje</SelectItem>
+                <SelectItem value="7d">Últimos 7 dias</SelectItem>
+                <SelectItem value="30d">Últimos 30 dias</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </Card>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="p-6">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-6">
+        <Card className="p-4 sm:p-6">
           <div>
-            <p className="text-sm text-muted-foreground mb-1">Total de Eventos</p>
-            <p className="text-3xl font-semibold">{stats.total}</p>
+            <p className="mb-1 text-xs text-muted-foreground sm:text-sm">Total de Eventos</p>
+            <p className="text-2xl font-semibold sm:text-3xl">{stats.total}</p>
           </div>
         </Card>
-        <Card className="p-6">
+        <Card className="p-4 sm:p-6">
           <div>
-            <p className="text-sm text-muted-foreground mb-1">Hoje</p>
-            <p className="text-3xl font-semibold">{stats.today}</p>
+            <p className="mb-1 text-xs text-muted-foreground sm:text-sm">Hoje</p>
+            <p className="text-2xl font-semibold sm:text-3xl">{stats.today}</p>
           </div>
         </Card>
-        <Card className="p-6">
+        <Card className="p-4 sm:p-6">
           <div>
-            <p className="text-sm text-muted-foreground mb-1">Esta Semana</p>
-            <p className="text-3xl font-semibold">{stats.week}</p>
+            <p className="mb-1 text-xs text-muted-foreground sm:text-sm">Esta Semana</p>
+            <p className="text-2xl font-semibold sm:text-3xl">{stats.week}</p>
           </div>
         </Card>
-        <Card className="p-6">
+        <Card className="p-4 sm:p-6">
           <div>
-            <p className="text-sm text-muted-foreground mb-1">Este Mês</p>
-            <p className="text-3xl font-semibold">{stats.month}</p>
+            <p className="mb-1 text-xs text-muted-foreground sm:text-sm">Este Mês</p>
+            <p className="text-2xl font-semibold sm:text-3xl">{stats.month}</p>
           </div>
         </Card>
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border bg-card">
-        <Table>
+      <div className="overflow-x-auto rounded-lg border bg-card">
+        <Table className="min-w-[720px]">
           <TableHeader>
             <TableRow>
               <TableHead>Usuário</TableHead>
@@ -348,19 +350,19 @@ export function AuditLogsPage() {
 
             {paginatedLogs.map((log) => (
               <TableRow key={log.id}>
-                <TableCell className="font-medium">{log.user}</TableCell>
+                <TableCell className="font-medium whitespace-nowrap">{log.user}</TableCell>
                 <TableCell>
                   <Badge variant="secondary" className={getActionColor(log.type)}>
                     {getActionLabel(log.type)}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {log.details}
+                <TableCell className="max-w-[280px] text-muted-foreground">
+                  <span className="line-clamp-2">{log.details}</span>
                 </TableCell>
-                <TableCell className="font-mono text-sm text-muted-foreground">
+                <TableCell className="font-mono text-sm whitespace-nowrap text-muted-foreground">
                   {log.ip}
                 </TableCell>
-                <TableCell className="text-muted-foreground">
+                <TableCell className="whitespace-nowrap text-muted-foreground">
                   {log.timestamp}
                 </TableCell>
               </TableRow>
@@ -370,7 +372,7 @@ export function AuditLogsPage() {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
           Mostrando {paginatedLogs.length} de {filteredLogs.length} registros filtrados (total:{" "}
           {stats.total})
@@ -379,6 +381,7 @@ export function AuditLogsPage() {
           <Button
             variant="outline"
             size="sm"
+            className="flex-1 sm:flex-none"
             disabled={currentPage <= 1}
             onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
           >
@@ -390,6 +393,7 @@ export function AuditLogsPage() {
           <Button
             variant="outline"
             size="sm"
+            className="flex-1 sm:flex-none"
             disabled={currentPage >= totalPages}
             onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
           >

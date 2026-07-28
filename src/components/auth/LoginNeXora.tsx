@@ -42,11 +42,95 @@ const GLOBAL_CSS = `
 @keyframes nx-blink{0%,100%{opacity:.35}50%{opacity:1}}
 @keyframes nx-orb1{0%,100%{transform:translate(0,0)}50%{transform:translate(40px,-30px)}}
 @keyframes nx-orb2{0%,100%{transform:translate(0,0)}50%{transform:translate(-30px,40px)}}
+.nx-root{--nx-pad-x:clamp(20px,4vw,56px);--nx-pad-y:clamp(12px,2vh,24px);box-sizing:border-box;height:100dvh;max-height:100dvh;overflow:hidden!important}
+.nx-root *,.nx-root *::before,.nx-root *::after{box-sizing:border-box}
 .nx-root ::placeholder{color:rgba(198,188,224,.42)}
 .nx-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in oklch,var(--accent) 26%,transparent)}
 .nx-submit:hover:not(:disabled){filter:brightness(1.08)}
 .nx-submit:disabled{opacity:.72;cursor:not-allowed}
 .nx-link:hover{color:#fff!important}
+.nx-header{position:relative;z-index:20;display:flex;align-items:center;justify-content:space-between;padding:var(--nx-pad-y) var(--nx-pad-x) 0;flex:none}
+.nx-shell{position:relative;z-index:10;display:flex;flex-direction:column;flex:1;height:calc(100dvh - 56px);min-height:0;max-height:calc(100dvh - 56px);overflow:hidden}
+.nx-main{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(420px,1.05fr);align-items:center;gap:clamp(28px,4vw,64px);padding:0 var(--nx-pad-x) clamp(12px,2vh,28px);flex:1;min-height:0;max-width:1520px;margin:0 auto;width:100%;height:100%}
+.nx-hero{max-width:540px;padding:0;min-width:0}
+.nx-hero-title{font-family:'Sora',sans-serif;font-weight:800;font-size:clamp(36px,4vw,60px);line-height:1.04;letter-spacing:-.025em;margin:0}
+.nx-stage{position:relative;height:100%;min-height:0;display:flex;align-items:center;justify-content:center;min-width:0;overflow:visible}
+.nx-cluster{position:relative;width:min(380px,100%);flex:none;overflow:visible}
+.nx-floats{position:absolute;inset:0;pointer-events:none;z-index:0;overflow:visible}
+.nx-floats-parallax{position:absolute;inset:0;transition:transform .25s ease-out;overflow:visible}
+.nx-float-card{position:absolute}
+.nx-float-card--kpi{top:0;right:0;width:248px;margin-top:-96px;margin-right:-150px}
+.nx-float-card--revenue{top:0;left:0;width:226px;margin-top:-72px;margin-left:-168px}
+.nx-float-card--bars{bottom:48px;left:0;width:210px;margin-left:-186px}
+.nx-float-card--donut{bottom:0;right:0;width:172px;margin-bottom:-36px;margin-right:-128px}
+.nx-float-card--insight{top:50%;right:0;width:228px;margin-top:-48px;margin-right:-198px}
+.nx-login{position:relative;z-index:5;width:100%;border-radius:22px;padding:clamp(18px,2.8vh,32px) clamp(18px,2.5vw,32px);background:linear-gradient(180deg,rgba(30,20,52,.94),rgba(18,11,34,.97));border:1px solid rgba(255,255,255,.11);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);box-shadow:0 40px 90px -30px rgba(0,0,0,.85),0 0 0 1px rgba(255,255,255,.03) inset,0 30px 80px -40px color-mix(in oklch,var(--accent) 55%,transparent);animation:nx-cardin .8s cubic-bezier(.2,.7,.3,1) .25s both}
+@media (max-width:1440px) and (max-height:900px) and (min-width:961px){
+  .nx-header{padding:10px var(--nx-pad-x) 0}
+  .nx-header img{height:32px!important}
+  .nx-shell{height:calc(100dvh - 42px);max-height:calc(100dvh - 42px)}
+  .nx-main{gap:16px;padding:0 24px 10px;max-width:none;grid-template-columns:minmax(0,1fr) minmax(380px,1.05fr)}
+  .nx-hero{max-width:420px}
+  .nx-hero-title{font-size:clamp(26px,2.6vw,36px)}
+  .nx-hero-copy{font-size:13.5px!important;line-height:1.45!important;margin-top:10px!important;max-width:400px!important}
+  .nx-hero-checks{margin-top:12px!important;gap:8px 16px!important}
+  .nx-hero-checks > div{font-size:12.5px!important}
+  .nx-hero-social{margin-top:14px!important}
+  .nx-hero-social span{font-size:12px!important}
+  .nx-cluster{width:min(340px,100%)}
+  .nx-floats{opacity:.92}
+  .nx-float-card--kpi{width:200px;margin-top:-78px;margin-right:-118px}
+  .nx-float-card--revenue{width:185px;margin-top:-58px;margin-left:-132px}
+  .nx-float-card--bars{width:175px;bottom:28px;margin-left:-148px}
+  .nx-float-card--donut{width:148px;margin-bottom:-24px;margin-right:-100px}
+  .nx-float-card--insight{width:190px;margin-right:-155px;margin-top:-40px}
+  .nx-login{padding:16px 18px;border-radius:18px}
+  .nx-login h2{font-size:19px!important;margin-bottom:2px!important}
+  .nx-login > p:first-of-type{font-size:12px!important}
+  .nx-login label[for]{margin:8px 0 4px!important;font-size:12px!important}
+  .nx-login .nx-input{padding:9px 12px!important;font-size:13.5px!important;border-radius:10px!important}
+  .nx-login .nx-input-pass{padding:9px 40px 9px 12px!important}
+  .nx-login .nx-row{margin:8px 0 12px!important}
+  .nx-login .nx-row label{margin:0!important;font-size:12px!important}
+  .nx-login .nx-submit{padding:10px!important;font-size:14px!important;border-radius:10px!important}
+  .nx-login .nx-foot{margin:10px 0 0!important;font-size:12px!important}
+  .nx-login .nx-about{margin:6px 0 0!important}
+}
+@media (max-width:1366px) and (max-height:900px) and (min-width:961px){
+  .nx-main{gap:10px;padding-left:18px;padding-right:18px;grid-template-columns:minmax(0,.95fr) minmax(400px,1.1fr)}
+  .nx-hero{max-width:380px}
+  .nx-float-card--insight{display:none}
+}
+@media (max-width:1180px) and (max-height:900px) and (min-width:961px){
+  .nx-main{grid-template-columns:minmax(0,.8fr) minmax(360px,1.15fr);gap:8px}
+  .nx-hero-title{font-size:clamp(24px,2.8vw,32px)}
+  .nx-cluster{width:min(320px,100%)}
+  .nx-float-card--donut{display:none}
+  .nx-float-card--bars{margin-left:-120px}
+}
+@media (max-width:960px){
+  .nx-shell{height:calc(100dvh - 52px);max-height:calc(100dvh - 52px);overflow:hidden}
+  .nx-main{grid-template-columns:1fr;justify-items:center;align-content:center;padding:8px var(--nx-pad-x) 16px;gap:10px;max-width:none;height:100%}
+  .nx-hero{max-width:520px;width:100%;padding:0;text-align:left}
+  .nx-hero-title{font-size:clamp(26px,7vw,34px)}
+  .nx-hero-copy,.nx-hero-checks,.nx-hero-social{display:none}
+  .nx-stage{width:100%;max-width:400px;padding:0;height:auto}
+  .nx-cluster{width:100%;max-width:400px}
+  .nx-floats{display:none!important}
+}
+@media (max-width:480px){
+  .nx-header img{height:32px!important}
+  .nx-hero-title{font-size:clamp(24px,7vw,30px)}
+  .nx-login{padding:18px 16px;border-radius:18px}
+  .nx-login h2{font-size:19px!important}
+}
+@media (max-height:700px) and (max-width:960px){
+  .nx-hero{display:none}
+  .nx-main{align-content:center}
+}
+@media (prefers-reduced-motion:reduce){
+  .nx-floats-parallax{transition:none}
+}
 `;
 
 const glass: React.CSSProperties = {
@@ -124,9 +208,12 @@ export function LoginNeXora({
 
   const rootStyle = {
     position: "relative",
-    minHeight: "100vh",
+    height: "100dvh",
+    maxHeight: "100dvh",
     width: "100%",
     overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
     background: "radial-gradient(130% 100% at 82% 8%, #1a1030 0%, #0e0920 42%, var(--background) 100%)",
     color: "#f4f1fb",
     fontFamily: "'Manrope',system-ui,sans-serif",
@@ -141,12 +228,12 @@ export function LoginNeXora({
       <style>{GLOBAL_CSS}</style>
 
       <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at 78% 20%, color-mix(in oklch, var(--accent) 32%, transparent) 0%, transparent 40%)", pointerEvents: "none" }} />
-      <div style={{ position: "absolute", top: "-14%", right: "-6%", width: 520, height: 520, borderRadius: "50%", background: "radial-gradient(circle, color-mix(in oklch, var(--accent) 55%, transparent) 0%, transparent 68%)", filter: "blur(30px)", opacity: 0.5, animation: "nx-orb1 16s ease-in-out infinite", animationPlayState: "var(--anim)", pointerEvents: "none" }} />
-      <div style={{ position: "absolute", bottom: "-16%", left: "26%", width: 460, height: 460, borderRadius: "50%", background: "radial-gradient(circle, color-mix(in oklch, var(--accent2) 45%, transparent) 0%, transparent 68%)", filter: "blur(38px)", opacity: 0.32, animation: "nx-orb2 19s ease-in-out infinite", animationPlayState: "var(--anim)", pointerEvents: "none" }} />
+      <div style={{ position: "absolute", top: "-14%", right: "-6%", width: "min(520px, 70vw)", height: "min(520px, 70vw)", borderRadius: "50%", background: "radial-gradient(circle, color-mix(in oklch, var(--accent) 55%, transparent) 0%, transparent 68%)", filter: "blur(30px)", opacity: 0.5, animation: "nx-orb1 16s ease-in-out infinite", animationPlayState: "var(--anim)", pointerEvents: "none" }} />
+      <div style={{ position: "absolute", bottom: "-16%", left: "26%", width: "min(460px, 65vw)", height: "min(460px, 65vw)", borderRadius: "50%", background: "radial-gradient(circle, color-mix(in oklch, var(--accent2) 45%, transparent) 0%, transparent 68%)", filter: "blur(38px)", opacity: 0.32, animation: "nx-orb2 19s ease-in-out infinite", animationPlayState: "var(--anim)", pointerEvents: "none" }} />
       <div style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,.028) 1px, transparent 1px),linear-gradient(90deg, rgba(255,255,255,.028) 1px, transparent 1px)", backgroundSize: "52px 52px", maskImage: "radial-gradient(120% 90% at 60% 30%, #000 0%, transparent 78%)", WebkitMaskImage: "radial-gradient(120% 90% at 60% 30%, #000 0%, transparent 78%)", pointerEvents: "none" }} />
       <div style={{ position: "absolute", inset: 0, background: "radial-gradient(140% 120% at 50% 120%, transparent 55%, rgba(6,3,14,.7) 100%)", pointerEvents: "none" }} />
 
-      <div style={{ position: "relative", zIndex: 20, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "30px 56px 0" }}>
+      <div className="nx-header">
         <img
           src={LOGO_URL}
           alt={brandName}
@@ -154,14 +241,10 @@ export function LoginNeXora({
         />
       </div>
 
-      <div style={{ position: "relative", zIndex: 10, display: "flex", alignItems: "center", gap: 24, padding: "0 56px", minHeight: "calc(100vh - 92px)", flexWrap: "wrap" }}>
-        <div style={{ flex: "1 1 440px", maxWidth: 560, padding: "40px 0" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 9, padding: "7px 14px", borderRadius: 999, border: "1px solid color-mix(in oklch, var(--accent) 42%, transparent)", background: "color-mix(in oklch, var(--accent) 12%, transparent)", fontSize: 12, letterSpacing: ".16em", fontWeight: 600, color: "color-mix(in oklch, var(--accent) 40%, #fff)" }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent2)", boxShadow: "0 0 10px var(--accent2)", animation: "nx-blink 2.4s ease-in-out infinite", animationPlayState: "var(--anim)" }} />
-            AGENTES DE IA · BUSINESS INTELLIGENCE
-          </div>
-
-          <h1 style={{ fontFamily: "'Sora'", fontWeight: 800, fontSize: "clamp(38px,4.4vw,64px)", lineHeight: 1.04, letterSpacing: "-.025em", margin: "26px 0 0" }}>
+      <div className="nx-shell">
+      <div className="nx-main">
+        <div className="nx-hero">
+          <h1 className="nx-hero-title">
             Você pergunta.
             <span
               style={{
@@ -176,11 +259,11 @@ export function LoginNeXora({
             </span>
           </h1>
 
-          <p style={{ fontSize: 17.5, lineHeight: 1.62, color: "rgba(214,205,236,.72)", margin: "22px 0 0", maxWidth: 470 }}>
+          <p className="nx-hero-copy" style={{ fontSize: 17.5, lineHeight: 1.62, color: "rgba(214,205,236,.72)", margin: "22px 0 0", maxWidth: 470 }}>
             Agentes de IA transformam sua pergunta em painéis, cruzam os indicadores e explicam a decisão — na primeira tela, sem complexidade de enterprise.
           </p>
 
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px 26px", marginTop: 30 }}>
+          <div className="nx-hero-checks" style={{ display: "flex", flexWrap: "wrap", gap: "12px 26px", marginTop: 30 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 9, fontSize: 14.5, color: "rgba(214,205,236,.82)" }}>
               <span style={{ width: 22, height: 22, borderRadius: 6, display: "grid", placeItems: "center", background: "color-mix(in oklch, var(--accent) 18%, transparent)", color: "#5eead4", fontSize: 13 }}>✓</span>
               Painéis prontos em minutos
@@ -191,7 +274,7 @@ export function LoginNeXora({
             </div>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 38 }}>
+          <div className="nx-hero-social" style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 38 }}>
             <div style={{ display: "flex" }}>
               <div style={{ width: 34, height: 34, borderRadius: "50%", border: "2px solid #14092a", background: "linear-gradient(135deg,#7c6cf0,#c026d3)" }} />
               <div style={{ width: 34, height: 34, borderRadius: "50%", border: "2px solid #14092a", background: "linear-gradient(135deg,#22d3ee,#7c6cf0)", marginLeft: -11 }} />
@@ -203,9 +286,11 @@ export function LoginNeXora({
           </div>
         </div>
 
-        <div style={{ flex: "1 1 560px", position: "relative", minHeight: 660, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div ref={floatRef} style={{ position: "absolute", inset: 0, transition: "transform .25s ease-out", pointerEvents: "none" }}>
-            <div style={{ position: "absolute", top: "2%", right: "-2%", width: 296, animation: "nx-rise .7s cubic-bezier(.2,.7,.3,1) .05s both" }}>
+        <div className="nx-stage">
+          <div className="nx-cluster">
+          <div className="nx-floats">
+          <div ref={floatRef} className="nx-floats-parallax">
+            <div className="nx-float-card nx-float-card--kpi" style={{ animation: "nx-rise .7s cubic-bezier(.2,.7,.3,1) .05s both" }}>
               <div style={{ animation: "nx-floatA 7.5s ease-in-out infinite", animationPlayState: "var(--anim)", animationDelay: ".7s" }}>
                 <div style={{ ...glass, padding: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <div>
@@ -222,7 +307,7 @@ export function LoginNeXora({
               </div>
             </div>
 
-            <div style={{ position: "absolute", top: "-1%", left: "-4%", width: 250, animation: "nx-rise .7s cubic-bezier(.2,.7,.3,1) .18s both" }}>
+            <div className="nx-float-card nx-float-card--revenue" style={{ animation: "nx-rise .7s cubic-bezier(.2,.7,.3,1) .18s both" }}>
               <div style={{ animation: "nx-floatC 8.5s ease-in-out infinite", animationPlayState: "var(--anim)", animationDelay: ".85s" }}>
                 <div style={{ ...glass, padding: "15px 15px 6px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -243,7 +328,7 @@ export function LoginNeXora({
               </div>
             </div>
 
-            <div style={{ position: "absolute", bottom: "16%", left: "-8%", width: 236, animation: "nx-rise .7s cubic-bezier(.2,.7,.3,1) .3s both" }}>
+            <div className="nx-float-card nx-float-card--bars" style={{ animation: "nx-rise .7s cubic-bezier(.2,.7,.3,1) .3s both" }}>
               <div style={{ animation: "nx-floatB 7s ease-in-out infinite", animationPlayState: "var(--anim)", animationDelay: ".95s" }}>
                 <div style={{ ...glass, padding: 15 }}>
                   <div style={{ fontSize: 12.5, fontWeight: 600, color: "rgba(232,226,246,.9)" }}>Vendas por região</div>
@@ -258,7 +343,7 @@ export function LoginNeXora({
               </div>
             </div>
 
-            <div style={{ position: "absolute", bottom: "6%", right: "1%", width: 186, animation: "nx-rise .7s cubic-bezier(.2,.7,.3,1) .42s both" }}>
+            <div className="nx-float-card nx-float-card--donut" style={{ animation: "nx-rise .7s cubic-bezier(.2,.7,.3,1) .42s both" }}>
               <div style={{ animation: "nx-floatA 8s ease-in-out infinite", animationPlayState: "var(--anim)", animationDelay: "1.05s" }}>
                 <div style={{ ...glass, padding: 15, display: "flex", alignItems: "center", gap: 13 }}>
                   <svg viewBox="0 0 100 100" style={{ width: 70, height: 70, transform: "rotate(-90deg)" }}>
@@ -274,7 +359,7 @@ export function LoginNeXora({
               </div>
             </div>
 
-            <div style={{ position: "absolute", top: "44%", right: "-6%", width: 262, animation: "nx-rise .7s cubic-bezier(.2,.7,.3,1) .55s both" }}>
+            <div className="nx-float-card nx-float-card--insight" style={{ animation: "nx-rise .7s cubic-bezier(.2,.7,.3,1) .55s both" }}>
               <div style={{ animation: "nx-floatC 9s ease-in-out infinite", animationPlayState: "var(--anim)", animationDelay: "1.15s" }}>
                 <div style={{ borderRadius: 14, padding: "13px 15px", background: "linear-gradient(120deg, color-mix(in oklch,var(--accent) 26%, rgba(23,15,40,.85)), rgba(23,15,40,.82))", border: "1px solid color-mix(in oklch,var(--accent) 40%,transparent)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", boxShadow: "0 24px 50px -18px rgba(0,0,0,.7)", display: "flex", gap: 11, alignItems: "flex-start" }}>
                   <div style={{ flex: "none", width: 26, height: 26, borderRadius: 8, display: "grid", placeItems: "center", background: "linear-gradient(135deg,var(--accent),var(--accent2))", fontSize: 14 }}>✦</div>
@@ -286,8 +371,9 @@ export function LoginNeXora({
               </div>
             </div>
           </div>
+          </div>
 
-          <div style={{ position: "relative", zIndex: 15, width: 394, maxWidth: "92%", borderRadius: 22, padding: "34px 32px", background: "linear-gradient(180deg, rgba(30,20,52,.88), rgba(18,11,34,.92))", border: "1px solid rgba(255,255,255,.11)", backdropFilter: "blur(22px)", WebkitBackdropFilter: "blur(22px)", boxShadow: "0 40px 90px -30px rgba(0,0,0,.85), 0 0 0 1px rgba(255,255,255,.03) inset, 0 30px 80px -40px color-mix(in oklch,var(--accent) 55%,transparent)", animation: "nx-cardin .8s cubic-bezier(.2,.7,.3,1) .25s both" }}>
+          <div className="nx-login">
             <h2 style={{ fontFamily: "'Sora'", fontWeight: 700, fontSize: 23, letterSpacing: "-.01em", margin: "0 0 5px" }}>Acesse seu painel</h2>
             <p style={{ fontSize: 13.5, color: "rgba(198,188,224,.62)", margin: 0 }}>Entre para continuar decidindo com dados.</p>
 
@@ -308,7 +394,7 @@ export function LoginNeXora({
               <div style={{ position: "relative" }}>
                 <input
                   id="nx-password"
-                  className="nx-input"
+                  className="nx-input nx-input-pass"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => onPasswordChange(e.target.value)}
@@ -326,7 +412,7 @@ export function LoginNeXora({
                 </button>
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "16px 0 22px" }}>
+              <div className="nx-row" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", margin: "16px 0 22px" }}>
                 <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "rgba(214,205,236,.72)", cursor: "pointer" }}>
                   <input
                     type="checkbox"
@@ -359,19 +445,21 @@ export function LoginNeXora({
               </button>
             </form>
 
-            <p style={{ textAlign: "center", fontSize: 13, color: "rgba(198,188,224,.58)", margin: "20px 0 0" }}>
+            <p className="nx-foot" style={{ textAlign: "center", fontSize: 13, color: "rgba(198,188,224,.58)", margin: "20px 0 0" }}>
               Novo por aqui?{" "}
               <Link to="/auth/register" className="nx-link" style={{ color: "#fff", fontWeight: 600, textDecoration: "none" }}>
                 Criar conta gratuita
               </Link>
             </p>
-            <p style={{ textAlign: "center", fontSize: 12, color: "rgba(198,188,224,.45)", margin: "12px 0 0" }}>
+            <p className="nx-about" style={{ textAlign: "center", fontSize: 12, color: "rgba(198,188,224,.45)", margin: "12px 0 0" }}>
               <Link to="/sobre" className="nx-link" style={{ color: "inherit", textDecoration: "none" }}>
                 O que é o NeXora?
               </Link>
             </p>
           </div>
+          </div>
         </div>
+      </div>
       </div>
     </div>
   );

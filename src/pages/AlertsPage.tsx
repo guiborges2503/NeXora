@@ -13,6 +13,7 @@ import { AlertTriangle, TrendingDown, Users, Package, CheckCircle2, Clock } from
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiGet } from "@/config/api";
 import { isPwaMode } from "@/config/pwa";
+import { useIsCompactLayout } from "@/components/ui/use-mobile";
 import { cn } from "@/components/ui/utils";
 
 type AlertItem = {
@@ -36,7 +37,7 @@ type AlertsResponse = {
 };
 
 export function AlertsPage() {
-  const pwaMode = isPwaMode();
+  const pwaMode = isPwaMode() || useIsCompactLayout();
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [stats, setStats] = useState<AlertsResponse["stats"]>({
     total: 0,
