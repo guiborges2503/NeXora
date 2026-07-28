@@ -252,11 +252,11 @@ export function UsersManagementPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-end">
-        <Button size="lg" onClick={startCreate}>
-          <Plus className="w-4 h-4 mr-2" />
+      <div className="flex items-center justify-stretch sm:justify-end">
+        <Button size="default" className="w-full sm:w-auto" onClick={startCreate}>
+          <Plus className="mr-2 h-4 w-4 shrink-0" />
           Novo Usuário
         </Button>
       </div>
@@ -264,9 +264,9 @@ export function UsersManagementPage() {
       {successMessage ? <p className="text-sm text-emerald-600">{successMessage}</p> : null}
 
       {/* Filters */}
-      <div className="flex gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+      <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
+        <div className="relative min-w-0 flex-1 sm:max-w-md">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Buscar usuários..."
             className="pl-10"
@@ -274,34 +274,36 @@ export function UsersManagementPage() {
             onChange={(event) => setSearch(event.target.value)}
           />
         </div>
-        <Select value={roleFilter} onValueChange={setRoleFilter}>
-          <SelectTrigger className="w-48 bg-card/60 backdrop-blur-md">
-            <SelectValue placeholder="Todos os perfis" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os perfis</SelectItem>
-            {roleOptions.map((role) => (
-              <SelectItem key={role.id} value={role.id}>
-                {role.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-48 bg-card/60 backdrop-blur-md">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="active">Ativos</SelectItem>
-            <SelectItem value="inactive">Inativos</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-4">
+          <Select value={roleFilter} onValueChange={setRoleFilter}>
+            <SelectTrigger className="w-full bg-card/60 backdrop-blur-md sm:w-48">
+              <SelectValue placeholder="Todos os perfis" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os perfis</SelectItem>
+              {roleOptions.map((role) => (
+                <SelectItem key={role.id} value={role.id}>
+                  {role.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full bg-card/60 backdrop-blur-md sm:w-48">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="active">Ativos</SelectItem>
+              <SelectItem value="inactive">Inativos</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Table */}
-      <div className="nx-glass overflow-hidden rounded-xl">
-        <Table>
+      <div className="nx-glass overflow-x-auto rounded-xl">
+        <Table className="min-w-[640px]">
           <TableHeader>
             <TableRow>
               <TableHead>Usuário</TableHead>
@@ -340,7 +342,7 @@ export function UsersManagementPage() {
               <TableRow key={user.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <Avatar className="w-10 h-10">
+                    <Avatar className="h-10 w-10 shrink-0">
                       <AvatarFallback className="bg-primary/10 text-primary">
                         {getInitials(user.name)}
                       </AvatarFallback>
@@ -349,14 +351,14 @@ export function UsersManagementPage() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Mail className="w-4 h-4" />
-                    {user.email}
+                  <div className="flex min-w-0 items-center gap-2 text-muted-foreground">
+                    <Mail className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{user.email}</span>
                   </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-muted-foreground" />
+                    <Shield className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <span>{getRoleLabel(user.role)}</span>
                   </div>
                 </TableCell>
@@ -376,7 +378,7 @@ export function UsersManagementPage() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm" aria-label={`Ações de ${user.name}`}>
-                        <MoreVertical className="w-4 h-4" />
+                        <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" sideOffset={8}>

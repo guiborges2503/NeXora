@@ -9,6 +9,7 @@ import { Send, Bot, Sparkles, Loader2, MessageSquarePlus } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/components/ui/utils";
 import { isPwaMode } from "@/config/pwa";
+import { useIsCompactLayout } from "@/components/ui/use-mobile";
 import { getUserInitials, getStoredUser } from "@/config/currentUser";
 import { getCurrentUserId } from "@/config/favorites";
 import { API_BASE_URL } from "@/config/api";
@@ -64,7 +65,7 @@ export function AIAssistantPage() {
   const messagesScrollRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<ChatTurn[]>([]);
   const activeDbIdRef = useRef<number | null>(null);
-  const pwaMode = isPwaMode();
+  const pwaMode = isPwaMode() || useIsCompactLayout();
   const user = getStoredUser();
   const userInitials = getUserInitials(user?.name);
 

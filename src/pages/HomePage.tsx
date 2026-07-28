@@ -296,29 +296,30 @@ export function HomePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header actions */}
-      <div className="flex items-center justify-end">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
           <Button
             type="button"
             variant={showFavoritesOnly ? "default" : "outline"}
-            size="lg"
+            size="default"
+            className="min-w-0 justify-center"
             onClick={() => setShowFavoritesOnly((current) => !current)}
           >
-            <Star className={`w-4 h-4 mr-2 ${showFavoritesOnly ? "fill-current" : ""}`} />
-            Favoritos
+            <Star className={`mr-1.5 h-4 w-4 shrink-0 sm:mr-2 ${showFavoritesOnly ? "fill-current" : ""}`} />
+            <span className="truncate">Favoritos</span>
           </Button>
-          <Button asChild size="lg" variant="outline">
-            <Link to="/reports/create">
-              <Sparkles className="w-4 h-4 mr-2" />
-              Relatório IA
+          <Button asChild size="default" variant="outline" className="min-w-0 justify-center">
+            <Link to="/reports/create" className="inline-flex min-w-0 items-center justify-center">
+              <Sparkles className="mr-1.5 h-4 w-4 shrink-0 sm:mr-2" />
+              <span className="truncate">Relatório IA</span>
             </Link>
           </Button>
-          <Button asChild size="lg">
-            <Link to="/dashboards/create">
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Dashboard
+          <Button asChild size="default" className="col-span-2 min-w-0 justify-center sm:col-span-1">
+            <Link to="/dashboards/create" className="inline-flex min-w-0 items-center justify-center">
+              <Plus className="mr-1.5 h-4 w-4 shrink-0 sm:mr-2" />
+              <span className="truncate">Novo Dashboard</span>
             </Link>
           </Button>
         </div>
@@ -326,41 +327,43 @@ export function HomePage() {
 
       {/* Filters */}
       <Card>
-        <CardContent className="pt-6">
-          <div className="flex gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <CardContent className="p-3 pt-4 sm:p-6 sm:pt-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
+            <div className="relative min-w-0 flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Buscar dashboards..."
-                className="pl-10 bg-background border-border"
+                className="bg-background border-border pl-10"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
             </div>
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-48 bg-background border-border">
-                <SelectValue placeholder="Categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                <SelectItem value="commercial">Comercial</SelectItem>
-                <SelectItem value="marketing">Marketing</SelectItem>
-                <SelectItem value="finance">Financeiro</SelectItem>
-                <SelectItem value="hr">RH</SelectItem>
-                <SelectItem value="operations">Operações</SelectItem>
-                <SelectItem value="other">Outro</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-48 bg-background border-border">
-                <SelectValue placeholder="Ordenar por" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="recent">Mais recentes</SelectItem>
-                <SelectItem value="views">Mais visualizados</SelectItem>
-                <SelectItem value="name">Nome A-Z</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-4">
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-full bg-background border-border sm:w-48">
+                  <SelectValue placeholder="Categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  <SelectItem value="commercial">Comercial</SelectItem>
+                  <SelectItem value="marketing">Marketing</SelectItem>
+                  <SelectItem value="finance">Financeiro</SelectItem>
+                  <SelectItem value="hr">RH</SelectItem>
+                  <SelectItem value="operations">Operações</SelectItem>
+                  <SelectItem value="other">Outro</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-full bg-background border-border sm:w-48">
+                  <SelectValue placeholder="Ordenar por" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recent">Mais recentes</SelectItem>
+                  <SelectItem value="views">Mais visualizados</SelectItem>
+                  <SelectItem value="name">Nome A-Z</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>

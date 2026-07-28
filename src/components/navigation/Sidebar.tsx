@@ -33,6 +33,8 @@ import {
 interface SidebarProps {
   isOpen: boolean;
   onToggle: () => void;
+  variant?: "dock" | "drawer";
+  onNavigate?: () => void;
 }
 
 const configSubItems = [
@@ -51,10 +53,12 @@ const mainMenuItems = [
   { icon: BarChart3, label: "Analytics", path: "/admin" },
 ];
 
-export function Sidebar({ isOpen, onToggle }: SidebarProps) {
+export function Sidebar({ isOpen, onToggle, variant = "dock", onNavigate }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const pwaMode = isPwaMode();
+  const isDrawer = variant === "drawer";
+  const showLabels = isOpen || isDrawer;
   const visibleMainMenuItems = pwaMode
     ? mainMenuItems.filter((item) => isFocusedPwaRoute(item.path))
     : mainMenuItems;
@@ -67,21 +71,23 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "relative z-20 flex flex-col border-r border-sidebar-border bg-sidebar/80 shadow-2xl shadow-primary/5 backdrop-blur-2xl transition-all duration-300 flex-shrink-0",
-        isOpen ? "w-64" : "w-24"
+        "relative z-20 flex flex-col border-sidebar-border bg-sidebar/80 shadow-2xl shadow-primary/5 backdrop-blur-2xl transition-all duration-300",
+        isDrawer
+          ? "h-full w-full border-0 shadow-none"
+          : cn("flex-shrink-0 border-r", isOpen ? "w-64" : "w-24")
       )}
     >
       {/* Logo */}
       <div className={cn(
         "flex items-center justify-center h-24 border-b border-sidebar-border flex-shrink-0",
-        isOpen ? "px-4" : "px-2"
+        showLabels ? "px-4" : "px-2"
       )}>
-        {isOpen && (
+        {showLabels && (
           <div className="flex items-center justify-center w-full min-w-0">
             <img src={logoImg} alt="NeXora" className="w-80 max-w-full object-contain" />
           </div>
         )}
-        {!isOpen && (
+        {!showLabels && (
           <img src={logotipoImg} alt="NeXora" className="h-20 w-20 object-contain" />
         )}
       </div>
@@ -101,6 +107,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
             <Link
               key={item.path}
               to={item.path}
+              onClick={onNavigate}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
                 isActive
@@ -109,7 +116,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
               )}
             >
               <Icon className="w-5 h-5 flex-shrink-0" />
-              {isOpen && <span className="text-sm font-medium">{item.label}</span>}
+              {showLabels && <span className="text-sm font-medium">{item.label}</span>}
             </Link>
           );
         })}
@@ -118,7 +125,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
       {/* Bottom section: Configurações (expandable) + Logout */}
       <div className="flex flex-col gap-1 px-3 py-4 border-t border-sidebar-border">
         {!pwaMode && (
-          isOpen ? (
+          showLabels ? (
             <Collapsible open={configOpen} onOpenChange={setConfigOpen}>
               <CollapsibleTrigger
                 className={cn(
@@ -144,6 +151,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                       <Link
                         key={item.path}
                         to={item.path}
+                        onClick={onNavigate}
                         className={cn(
                           "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
                           isActive
@@ -180,6 +188,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                     <DropdownMenuItem key={item.path} asChild>
                       <Link
                         to={item.path}
+                        onClick={onNavigate}
                         className={cn(
                           "flex items-center gap-3 cursor-pointer",
                           isActive && "bg-gradient-to-r from-primary to-primary-2 text-sidebar-primary-foreground"
@@ -198,6 +207,7 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
         <button
           onClick={() => {
             clearAuthSession();
+            onNavigate?.();
             navigate("/auth/login");
           }}
           className={cn(
@@ -206,12 +216,12 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
           )}
         >
           <LogOut className="w-5 h-5 flex-shrink-0" />
-          {isOpen && <span className="text-sm font-medium">Sair</span>}
+          {showLabels && <span className="text-sm font-medium">Sair</span>}
         </button>
       </div>
 
-      {/* Toggle Button */}
-      {!pwaMode && (
+      {/* Toggle Button — só no modo dock (desktop) */}
+      {!pwaMode && !isDrawer && (
         <button
           onClick={onToggle}
           className="absolute -right-3 top-12 w-6 h-6 bg-card border border-border rounded-full flex items-center justify-center hover:bg-accent transition-colors z-10"
