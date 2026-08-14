@@ -75,8 +75,6 @@ const GLOBAL_CSS = `
   .nx-hero-copy{font-size:13.5px!important;line-height:1.45!important;margin-top:10px!important;max-width:400px!important}
   .nx-hero-checks{margin-top:12px!important;gap:8px 16px!important}
   .nx-hero-checks > div{font-size:12.5px!important}
-  .nx-hero-social{margin-top:14px!important}
-  .nx-hero-social span{font-size:12px!important}
   .nx-cluster{width:min(340px,100%)}
   .nx-floats{opacity:.92}
   .nx-float-card--kpi{width:200px;margin-top:-78px;margin-right:-118px}
@@ -113,7 +111,7 @@ const GLOBAL_CSS = `
   .nx-main{grid-template-columns:1fr;justify-items:center;align-content:center;padding:8px var(--nx-pad-x) 16px;gap:10px;max-width:none;height:100%}
   .nx-hero{max-width:520px;width:100%;padding:0;text-align:left}
   .nx-hero-title{font-size:clamp(26px,7vw,34px)}
-  .nx-hero-copy,.nx-hero-checks,.nx-hero-social{display:none}
+  .nx-hero-copy,.nx-hero-checks{display:none}
   .nx-stage{width:100%;max-width:400px;padding:0;height:auto}
   .nx-cluster{width:100%;max-width:400px}
   .nx-floats{display:none!important}
@@ -272,17 +270,6 @@ export function LoginNeXora({
               <span style={{ width: 22, height: 22, borderRadius: 6, display: "grid", placeItems: "center", background: "color-mix(in oklch, var(--accent) 18%, transparent)", color: "#5eead4", fontSize: 13 }}>✓</span>
               IA que explica cada número
             </div>
-          </div>
-
-          <div className="nx-hero-social" style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 38 }}>
-            <div style={{ display: "flex" }}>
-              <div style={{ width: 34, height: 34, borderRadius: "50%", border: "2px solid #14092a", background: "linear-gradient(135deg,#7c6cf0,#c026d3)" }} />
-              <div style={{ width: 34, height: 34, borderRadius: "50%", border: "2px solid #14092a", background: "linear-gradient(135deg,#22d3ee,#7c6cf0)", marginLeft: -11 }} />
-              <div style={{ width: 34, height: 34, borderRadius: "50%", border: "2px solid #14092a", background: "linear-gradient(135deg,#22d3ee,#8b5cf6)", marginLeft: -11 }} />
-            </div>
-            <span style={{ fontSize: 13.5, color: "rgba(214,205,236,.6)", lineHeight: 1.4 }}>
-              Mais de 2.400 times de dados<br />já decidem com a {brandName}
-            </span>
           </div>
         </div>
 
