@@ -19,6 +19,7 @@ import { AlertsPage } from "@/pages/AlertsPage";
 import { AdminDashboardPage } from "@/pages/AdminDashboardPage";
 import { CompanySettingsPage } from "@/pages/CompanySettingsPage";
 import { OpenRouterSettingsPage } from "@/pages/OpenRouterSettingsPage";
+import { CompanyDataSourcesPage } from "@/pages/CompanyDataSourcesPage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { AuditLogsPage } from "@/pages/AuditLogsPage";
 import { PermissionsPage } from "@/pages/PermissionsPage";
@@ -89,6 +90,7 @@ export const router = createBrowserRouter([
       { path: "admin", element: <AdminDashboardPage /> },
       { path: "settings/company", element: <CompanySettingsPage /> },
       { path: "settings/openrouter", element: <OpenRouterSettingsPage /> },
+      { path: "settings/data-sources", element: <CompanyDataSourcesPage /> },
       { path: "settings/profile", element: <ProfilePage /> },
       { path: "audit", element: <AuditLogsPage /> },
       { path: "permissions", element: <PermissionsPage /> },

@@ -4,7 +4,7 @@ import path from "node:path";
 import process from "node:process";
 
 const DEV_PORT = 5173;
-const API_PORT = 8000;
+const BUILTIN_PHP_PORT = 8000;
 
 const children = [];
 
@@ -13,18 +13,20 @@ function readApiProxyTarget() {
     const envPath = path.join(process.cwd(), ".env.development");
     const content = fs.readFileSync(envPath, "utf8");
     const match = content.match(/^VITE_API_PROXY_TARGET=(.+)$/m);
-    return match?.[1]?.trim() || `http://127.0.0.1:${API_PORT}`;
+    return match?.[1]?.trim() || "http://localhost/NeXora";
   } catch {
     return `http://127.0.0.1:${API_PORT}`;
   }
 }
 
-function usesLocalApi(target) {
+function usesBuiltInPhpServer(target) {
   try {
     const url = new URL(target);
-    return url.hostname === "127.0.0.1" || url.hostname === "localhost";
+    const localHost = url.hostname === "127.0.0.1" || url.hostname === "localhost";
+    const port = url.port || (url.protocol === "https:" ? "443" : "80");
+    return localHost && port === String(BUILTIN_PHP_PORT);
   } catch {
-    return true;
+    return false;
   }
 }
 
@@ -92,23 +94,23 @@ function run(command, args) {
 process.on("SIGINT", () => shutdown(0));
 process.on("SIGTERM", () => shutdown(0));
 
-freePort(API_PORT);
 freePort(DEV_PORT);
 
 const apiProxyTarget = readApiProxyTarget();
-const localApi = usesLocalApi(apiProxyTarget);
+const builtinPhp = usesBuiltInPhpServer(apiProxyTarget);
 
-if (localApi) {
-  console.log(`[dev] API PHP  http://127.0.0.1:${API_PORT}/api/health.php`);
+if (builtinPhp) {
+  freePort(BUILTIN_PHP_PORT);
+  console.log(`[dev] API PHP  http://127.0.0.1:${BUILTIN_PHP_PORT}/api/health.php`);
 } else {
-  console.log(`[dev] API proxy → ${apiProxyTarget}/api/`);
+  console.log(`[dev] API WAMP → ${apiProxyTarget.replace(/\/$/, "")}/api/`);
 }
 
 console.log(`[dev] Frontend http://127.0.0.1:${DEV_PORT}`);
-console.log("[dev] Ctrl+C encerra API e Vite juntos");
+console.log("[dev] Ctrl+C encerra o Vite");
 console.log("");
 
-if (localApi) {
-  run("php", ["-S", `127.0.0.1:${API_PORT}`, "-t", "."]);
+if (builtinPhp) {
+  run("php", ["-S", `127.0.0.1:${BUILTIN_PHP_PORT}`, "-t", "."]);
 }
 run("npx", ["vite"]);

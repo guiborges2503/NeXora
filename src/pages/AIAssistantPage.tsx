@@ -31,6 +31,7 @@ import {
 } from "@/config/aiConversationsApi";
 import { fallbackTitleFromMessages, generateSmartConversationTitle } from "@/config/aiConversationTitle";
 import { AI_ASSISTANT_SYSTEM_PROMPT, detectDashboardIntent } from "@/config/aiAssistantPrompt";
+import { MarkdownMessage } from "@/components/chat/MarkdownMessage";
 
 type ChatTurn = ApiChatTurn;
 
@@ -540,7 +541,11 @@ export function AIAssistantPage() {
                               : "bg-muted",
                           )}
                         >
-                          <p className="text-sm whitespace-pre-wrap break-words">{chat.content}</p>
+                          {chat.role === "assistant" ? (
+                            <MarkdownMessage content={chat.content} />
+                          ) : (
+                            <p className="text-sm whitespace-pre-wrap break-words">{chat.content}</p>
+                          )}
                         </div>
                         <span className="text-xs text-muted-foreground px-1">{chat.timeLabel}</span>
                       </div>

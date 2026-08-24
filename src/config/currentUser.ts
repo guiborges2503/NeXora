@@ -1,3 +1,5 @@
+import { apiGet } from "@/config/api";
+
 export type StoredUser = {
   id?: number;
   name?: string;
@@ -17,6 +19,43 @@ export function getStoredUser(): StoredUser | null {
     return JSON.parse(rawUser) as StoredUser;
   } catch {
     return null;
+  }
+}
+
+export function persistStoredUser(patch: Partial<StoredUser>): StoredUser | null {
+  const current = getStoredUser();
+  if (!current) return null;
+
+  const next: StoredUser = { ...current, ...patch, authenticated: true };
+  localStorage.setItem("nexora_user", JSON.stringify(next));
+  window.dispatchEvent(new CustomEvent("nexora-user-updated"));
+  return next;
+}
+
+export async function refreshSessionUser(): Promise<StoredUser | null> {
+  const current = getStoredUser();
+  if (!current) return null;
+
+  try {
+    const profile = await apiGet<{
+      id: number;
+      name: string;
+      email: string;
+      status: string;
+      role: string;
+      avatar_url?: string;
+    }>("/profile.php");
+
+    return persistStoredUser({
+      id: profile.id,
+      name: profile.name,
+      email: profile.email,
+      status: profile.status,
+      role: profile.role,
+      avatar_url: profile.avatar_url,
+    });
+  } catch {
+    return current;
   }
 }
 

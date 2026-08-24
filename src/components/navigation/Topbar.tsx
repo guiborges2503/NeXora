@@ -18,7 +18,7 @@ import {
 } from "../ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Link, useLocation, useNavigate } from "react-router";
-import { type StoredUser, getRoleLabel, getStoredUser, getUserInitials } from "@/config/currentUser";
+import { type StoredUser, getRoleLabel, getStoredUser, getUserInitials, refreshSessionUser } from "@/config/currentUser";
 import { apiGet } from "@/config/api";
 import { clearAuthSession } from "@/config/auth";
 import { isPwaMode } from "@/config/pwa";
@@ -57,6 +57,16 @@ export function Topbar({ onMenuClick, showMenuButton = false, compact = false }:
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
   const [notificationsError, setNotificationsError] = useState("");
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    void refreshSessionUser().then(() => {
+      if (mounted) setUser(getStoredUser());
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     setUser(getStoredUser());
@@ -175,6 +185,13 @@ export function Topbar({ onMenuClick, showMenuButton = false, compact = false }:
       return {
         title: "Configuração da API OpenRouter",
         description: "Defina sua chave e o modelo padrão para chamadas à API OpenRouter",
+      };
+    }
+
+    if (pathname === "/settings/data-sources") {
+      return {
+        title: "Conexão de dados da empresa",
+        description: "Configure o banco de dados ou a API da sua operação",
       };
     }
 

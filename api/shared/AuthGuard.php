@@ -48,6 +48,17 @@ class AuthGuard
             Response::unauthorized('Usuário inativo')->send();
         }
 
+        $roleStmt = $db->prepare(
+            "SELECT COALESCE(MIN(r.name), 'viewer')
+             FROM users u
+             LEFT JOIN user_roles ur ON ur.user_id = u.id
+             LEFT JOIN roles r ON r.id = ur.role_id
+             WHERE u.id = :id"
+        );
+        $roleStmt->execute(['id' => $user['id']]);
+        $role = (string) $roleStmt->fetchColumn();
+        $user['role'] = $role !== '' ? $role : 'viewer';
+
         $request->setAuthUser($user);
 
         return $user;

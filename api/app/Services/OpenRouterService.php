@@ -305,6 +305,10 @@ class OpenRouterService
      */
     private function applyCurlSslOptions($ch): void
     {
+        if (defined('CURL_HTTP_VERSION_1_1')) {
+            curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+        }
+
         $verify = defined('OPENROUTER_SSL_VERIFY') ? OPENROUTER_SSL_VERIFY : true;
 
         if (!$verify) {

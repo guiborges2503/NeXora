@@ -3,7 +3,7 @@ import { clearAuthSession, getAuthToken } from "@/config/auth";
 /**
  * API no mesmo domínio do site.
  * Produção: https://nexora.conectaxcon.com.br/api/...
- * Dev local: proxy /api → produção (VITE_API_PROXY_TARGET) ou PHP local (8000)
+ * Dev local: proxy /api → Apache do WAMP (http://localhost/NeXora/api/...)
  */
 export const API_BASE_URL = "/api";
 

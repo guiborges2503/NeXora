@@ -13,6 +13,7 @@ SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';
 /*
 DROP TABLE IF EXISTS ai_report_role_access;
 DROP TABLE IF EXISTS ai_reports;
+DROP TABLE IF EXISTS company_data_sources;
 DROP TABLE IF EXISTS openrouter_settings;
 DROP TABLE IF EXISTS sales;
 DROP TABLE IF EXISTS customers;
@@ -25,6 +26,7 @@ DROP TABLE IF EXISTS dashboard_favorites;
 DROP TABLE IF EXISTS dashboard_role_access;
 DROP TABLE IF EXISTS dashboard_meta;
 DROP TABLE IF EXISTS audit_logs;
+DROP TABLE IF EXISTS alert_settings;
 DROP TABLE IF EXISTS alerts;
 DROP TABLE IF EXISTS dashboards;
 DROP TABLE IF EXISTS role_permissions;
@@ -98,6 +100,25 @@ CREATE TABLE IF NOT EXISTS alerts (
     created_at DATETIME NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS alert_settings (
+    id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
+    notify_email TINYINT(1) NOT NULL DEFAULT 1,
+    notify_in_app TINYINT(1) NOT NULL DEFAULT 1,
+    sales_drop_enabled TINYINT(1) NOT NULL DEFAULT 1,
+    sales_drop_percent DECIMAL(6,2) NOT NULL DEFAULT 15.00,
+    stock_low_enabled TINYINT(1) NOT NULL DEFAULT 1,
+    stock_low_qty INT NOT NULL DEFAULT 10,
+    inactive_customers_enabled TINYINT(1) NOT NULL DEFAULT 1,
+    inactive_days INT NOT NULL DEFAULT 30,
+    finance_goal_enabled TINYINT(1) NOT NULL DEFAULT 0,
+    finance_goal_percent DECIMAL(6,2) NOT NULL DEFAULT 80.00,
+    updated_at DATETIME NOT NULL,
+    updated_by INT NULL,
+    FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT IGNORE INTO alert_settings (id, updated_at) VALUES (1, NOW());
 
 CREATE TABLE IF NOT EXISTS audit_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -264,6 +285,38 @@ CREATE TABLE IF NOT EXISTS openrouter_settings (
 
 INSERT IGNORE INTO openrouter_settings (id, api_key, default_model, updated_at)
 VALUES (1, '', 'openai/gpt-4o-mini', NOW());
+
+CREATE TABLE IF NOT EXISTS company_data_sources (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    connection_type VARCHAR(20) NOT NULL DEFAULT 'database',
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    is_default TINYINT(1) NOT NULL DEFAULT 0,
+    db_driver VARCHAR(20) NOT NULL DEFAULT 'mysql',
+    db_host VARCHAR(255) NOT NULL DEFAULT '',
+    db_port VARCHAR(10) NOT NULL DEFAULT '3306',
+    db_name VARCHAR(255) NOT NULL DEFAULT '',
+    db_user VARCHAR(255) NOT NULL DEFAULT '',
+    db_password TEXT NULL,
+    db_ssl TINYINT(1) NOT NULL DEFAULT 0,
+    db_charset VARCHAR(32) NOT NULL DEFAULT 'utf8mb4',
+    api_base_url TEXT NULL,
+    api_auth_type VARCHAR(20) NOT NULL DEFAULT 'bearer',
+    api_token TEXT NULL,
+    api_key_header VARCHAR(100) NOT NULL DEFAULT 'X-API-Key',
+    api_username VARCHAR(255) NOT NULL DEFAULT '',
+    api_password TEXT NULL,
+    api_test_path VARCHAR(255) NOT NULL DEFAULT '',
+    last_tested_at DATETIME NULL,
+    last_test_ok TINYINT(1) NULL,
+    last_test_message VARCHAR(500) NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    updated_by INT NULL,
+    FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE INDEX idx_company_data_sources_default ON company_data_sources (is_default, is_active);
 
 CREATE INDEX idx_ai_reports_owner_id ON ai_reports(owner_id);
 

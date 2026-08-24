@@ -9,12 +9,34 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AlertTriangle, TrendingDown, Users, Package, CheckCircle2, Clock } from "lucide-react";
+import {
+  AlertTriangle,
+  TrendingDown,
+  Users,
+  Package,
+  CheckCircle2,
+  Clock,
+  Loader2,
+  Save,
+} from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { apiGet } from "@/config/api";
+import { apiGet, apiPatch, apiPut } from "@/config/api";
 import { isPwaMode } from "@/config/pwa";
 import { useIsCompactLayout } from "@/components/ui/use-mobile";
 import { cn } from "@/components/ui/utils";
+import { getStoredUser, refreshSessionUser } from "@/config/currentUser";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type AlertItem = {
   id: number;
@@ -36,6 +58,32 @@ type AlertsResponse = {
   };
 };
 
+type AlertSettings = {
+  notify_email: boolean;
+  notify_in_app: boolean;
+  sales_drop_enabled: boolean;
+  sales_drop_percent: number;
+  stock_low_enabled: boolean;
+  stock_low_qty: number;
+  inactive_customers_enabled: boolean;
+  inactive_days: number;
+  finance_goal_enabled: boolean;
+  finance_goal_percent: number;
+};
+
+const defaultSettings: AlertSettings = {
+  notify_email: true,
+  notify_in_app: true,
+  sales_drop_enabled: true,
+  sales_drop_percent: 15,
+  stock_low_enabled: true,
+  stock_low_qty: 10,
+  inactive_customers_enabled: true,
+  inactive_days: 30,
+  finance_goal_enabled: false,
+  finance_goal_percent: 80,
+};
+
 export function AlertsPage() {
   const pwaMode = isPwaMode() || useIsCompactLayout();
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
@@ -48,42 +96,90 @@ export function AlertsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [canEdit, setCanEdit] = useState(() => getStoredUser()?.role === "admin");
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settings, setSettings] = useState<AlertSettings>(defaultSettings);
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [settingsSaved, setSettingsSaved] = useState(false);
+  const [resolvingId, setResolvingId] = useState<number | null>(null);
+
+  async function loadAlerts() {
+    setIsLoading(true);
+    setErrorMessage("");
+    try {
+      const data = await apiGet<AlertsResponse>("/alerts.php");
+      setAlerts(Array.isArray(data.items) ? data.items : []);
+      setStats(data.stats);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Não foi possível carregar alertas.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   useEffect(() => {
-    let mounted = true;
-
-    async function loadAlerts() {
-      try {
-        const data = await apiGet<AlertsResponse>("/alerts.php");
-        if (mounted) {
-          setAlerts(data.items);
-          setStats(data.stats);
-        }
-      } catch (error) {
-        if (mounted) {
-          setErrorMessage(
-            error instanceof Error ? error.message : "Não foi possível carregar alertas."
-          );
-        }
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    loadAlerts();
-    return () => {
-      mounted = false;
-    };
+    void loadAlerts();
+    void refreshSessionUser().then((user) => setCanEdit(user?.role === "admin"));
   }, []);
 
-  const filteredAlerts = useMemo(() => {
-    if (severityFilter === "all") {
-      return alerts;
+  async function openSettings() {
+    setSettingsOpen(true);
+    setSettingsError(null);
+    setSettingsSaved(false);
+    setSettingsLoading(true);
+    try {
+      const data = await apiGet<AlertSettings>("/alerts.php?action=settings");
+      setSettings({ ...defaultSettings, ...data });
+    } catch (error) {
+      setSettingsError(
+        error instanceof Error ? error.message : "Não foi possível carregar a configuração."
+      );
+    } finally {
+      setSettingsLoading(false);
     }
-    return alerts.filter((alert) => alert.severity === severityFilter);
-  }, [alerts, severityFilter]);
+  }
+
+  async function saveSettings() {
+    if (!canEdit) {
+      setSettingsError("Apenas administradores podem alterar as regras de alerta.");
+      return;
+    }
+    setSettingsSaving(true);
+    setSettingsError(null);
+    setSettingsSaved(false);
+    try {
+      const saved = await apiPut<AlertSettings, AlertSettings>("/alerts.php", settings);
+      setSettings({ ...defaultSettings, ...saved });
+      setSettingsSaved(true);
+    } catch (error) {
+      setSettingsError(error instanceof Error ? error.message : "Falha ao salvar configuração.");
+    } finally {
+      setSettingsSaving(false);
+    }
+  }
+
+  async function resolveAlert(id: number) {
+    setResolvingId(id);
+    try {
+      await apiPatch<{ id: number }, Record<string, never>>(`/alerts.php?action=resolve&id=${id}`, {});
+      await loadAlerts();
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Não foi possível resolver o alerta.");
+    } finally {
+      setResolvingId(null);
+    }
+  }
+
+  const filteredAlerts = useMemo(() => {
+    return alerts.filter((alert) => {
+      const severityOk = severityFilter === "all" || alert.severity === severityFilter;
+      const categoryOk = categoryFilter === "all" || alert.category.toLowerCase() === categoryFilter;
+      return severityOk && categoryOk;
+    });
+  }, [alerts, severityFilter, categoryFilter]);
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -124,17 +220,95 @@ export function AlertsPage() {
     }
   };
 
+  function emptyState(message: string) {
+    return (
+      <Card>
+        <CardHeader>
+          <p className="text-muted-foreground">{message}</p>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  function renderAlertCard(alert: AlertItem, resolvedLook: boolean) {
+    const Icon = getAlertIcon(alert.severity);
+    return (
+      <Card
+        key={alert.id}
+        className={cn("hover:shadow-md transition-shadow", resolvedLook && "opacity-60")}
+      >
+        <CardHeader>
+          <div
+            className={cn(
+              "flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between",
+              pwaMode && "flex-col items-stretch",
+            )}
+          >
+            <div className={cn("flex gap-4 min-w-0", pwaMode && "gap-3")}>
+              <div
+                className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                  resolvedLook ? "bg-green-100 text-green-700" : getSeverityColor(alert.severity)
+                }`}
+              >
+                <Icon className="w-6 h-6" />
+              </div>
+              <div className={cn("space-y-2 min-w-0", pwaMode && "w-full")}>
+                <div className={cn("flex items-center gap-2", pwaMode && "flex-wrap")}>
+                  <h3 className={cn("font-semibold text-lg", pwaMode && "text-base leading-tight")}>
+                    {alert.title}
+                  </h3>
+                  <Badge
+                    variant="outline"
+                    className={resolvedLook ? "bg-green-100 text-green-700" : getSeverityColor(alert.severity)}
+                  >
+                    {resolvedLook ? "Resolvido" : getSeverityLabel(alert.severity)}
+                  </Badge>
+                </div>
+                <p className="text-muted-foreground">{alert.description}</p>
+                <div className={cn("flex items-center gap-4 text-sm", pwaMode && "flex-wrap gap-2")}>
+                  <Badge variant="secondary">{alert.category}</Badge>
+                  <span className="text-muted-foreground">{alert.timestamp}</span>
+                </div>
+              </div>
+            </div>
+            {alert.status === "active" ? (
+              <div className={cn("flex w-full gap-2 sm:w-auto sm:justify-end", pwaMode && "w-full")}>
+                <Button
+                  size="sm"
+                  className={cn(pwaMode && "flex-1")}
+                  disabled={resolvingId === alert.id}
+                  onClick={() => void resolveAlert(alert.id)}
+                >
+                  {resolvingId === alert.id ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  Resolver
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  const activeAlerts = filteredAlerts.filter((alert) => alert.status === "active");
+  const resolvedAlerts = filteredAlerts.filter((alert) => alert.status === "resolved");
+
   return (
     <div className={cn("space-y-6", pwaMode && "space-y-4")}>
-      {/* Header */}
       <div className={cn("flex items-center justify-end", pwaMode && "justify-stretch")}>
-        <Button size={pwaMode ? "default" : "lg"} variant="outline" className={cn(pwaMode && "w-full")}>
+        <Button
+          size={pwaMode ? "default" : "lg"}
+          variant="outline"
+          className={cn(pwaMode && "w-full")}
+          onClick={() => void openSettings()}
+        >
           <AlertTriangle className="w-4 h-4 mr-2" />
           Configurar Alertas
         </Button>
       </div>
 
-      {/* Stats */}
       <div className={cn("grid grid-cols-1 md:grid-cols-4 gap-6", pwaMode && "grid-cols-2 gap-3")}>
         <Card>
           <CardContent className="pt-6">
@@ -190,18 +364,18 @@ export function AlertsPage() {
         </Card>
       </div>
 
-      {/* Filters */}
       <div className={cn("flex gap-4", pwaMode && "flex-col gap-2")}>
-        <Select>
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
           <SelectTrigger className={cn("w-48 bg-card border-border", pwaMode && "w-full")}>
             <SelectValue placeholder="Todas categorias" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas categorias</SelectItem>
-            <SelectItem value="sales">Vendas</SelectItem>
-            <SelectItem value="customers">Clientes</SelectItem>
-            <SelectItem value="stock">Estoque</SelectItem>
-            <SelectItem value="finance">Financeiro</SelectItem>
+            <SelectItem value="geral">Geral</SelectItem>
+            <SelectItem value="vendas">Vendas</SelectItem>
+            <SelectItem value="clientes">Clientes</SelectItem>
+            <SelectItem value="estoque">Estoque</SelectItem>
+            <SelectItem value="financeiro">Financeiro</SelectItem>
           </SelectContent>
         </Select>
         <Select value={severityFilter} onValueChange={setSeverityFilter}>
@@ -217,7 +391,10 @@ export function AlertsPage() {
         </Select>
       </div>
 
-      {/* Alerts Tabs */}
+      {errorMessage ? (
+        <p className="text-sm text-destructive">{errorMessage}</p>
+      ) : null}
+
       <Tabs defaultValue="active" className="w-full">
         <TabsList className={cn(pwaMode && "w-full justify-start overflow-x-auto")}>
           <TabsTrigger value="active">Ativos</TabsTrigger>
@@ -226,195 +403,219 @@ export function AlertsPage() {
         </TabsList>
 
         <TabsContent value="active" className="space-y-4 mt-6">
-          {filteredAlerts
-            .filter((alert) => alert.status === "active")
-            .map((alert) => {
-              const Icon = getAlertIcon(alert.severity);
-              return (
-                <Card key={alert.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader>
-                    <div
-                      className={cn(
-                        "flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between",
-                        pwaMode && "flex-col items-stretch",
-                      )}
-                    >
-                      <div className={cn("flex gap-4 min-w-0", pwaMode && "gap-3")}>
-                        <div
-                          className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${getSeverityColor(
-                            alert.severity
-                          )}`}
-                        >
-                          <Icon className="w-6 h-6" />
-                        </div>
-                        <div className={cn("space-y-2 min-w-0", pwaMode && "w-full")}>
-                          <div className={cn("flex items-center gap-2", pwaMode && "flex-wrap")}>
-                            <h3 className={cn("font-semibold text-lg", pwaMode && "text-base leading-tight")}>
-                              {alert.title}
-                            </h3>
-                            <Badge
-                              variant="outline"
-                              className={getSeverityColor(alert.severity)}
-                            >
-                              {getSeverityLabel(alert.severity)}
-                            </Badge>
-                          </div>
-                          <p className="text-muted-foreground">{alert.description}</p>
-                          <div className={cn("flex items-center gap-4 text-sm", pwaMode && "flex-wrap gap-2")}>
-                            <Badge variant="secondary">{alert.category}</Badge>
-                            <span className="text-muted-foreground">{alert.timestamp}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className={cn("flex w-full gap-2 sm:w-auto sm:justify-end", pwaMode && "w-full")}>
-                        <Button variant="outline" size="sm" className={cn(pwaMode && "flex-1")}>
-                          Ver Detalhes
-                        </Button>
-                        <Button size="sm" className={cn(pwaMode && "flex-1")}>
-                          Resolver
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>
-              );
-            })}
+          {isLoading
+            ? emptyState("Carregando alertas...")
+            : activeAlerts.length === 0
+              ? emptyState("Nenhum alerta ativo. Use Configurar Alertas para definir as regras.")
+              : activeAlerts.map((alert) => renderAlertCard(alert, false))}
         </TabsContent>
 
         <TabsContent value="resolved" className="space-y-4 mt-6">
-          {filteredAlerts
-            .filter((alert) => alert.status === "resolved")
-            .map((alert) => {
-              const Icon = getAlertIcon(alert.severity);
-              return (
-                <Card key={alert.id} className="opacity-60">
-                  <CardHeader>
-                    <div
-                      className={cn(
-                        "flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between",
-                        pwaMode && "flex-col items-stretch",
-                      )}
-                    >
-                      <div className={cn("flex gap-4 min-w-0", pwaMode && "gap-3")}>
-                        <div className="w-12 h-12 bg-green-100 text-green-700 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <Icon className="w-6 h-6" />
-                        </div>
-                        <div className={cn("space-y-2 min-w-0", pwaMode && "w-full")}>
-                          <div className={cn("flex items-center gap-2", pwaMode && "flex-wrap")}>
-                            <h3 className={cn("font-semibold text-lg", pwaMode && "text-base leading-tight")}>
-                              {alert.title}
-                            </h3>
-                            <Badge variant="outline" className="bg-green-100 text-green-700">
-                              Resolvido
-                            </Badge>
-                          </div>
-                          <p className="text-muted-foreground">{alert.description}</p>
-                          <div className={cn("flex items-center gap-4 text-sm", pwaMode && "flex-wrap gap-2")}>
-                            <Badge variant="secondary">{alert.category}</Badge>
-                            <span className="text-muted-foreground">{alert.timestamp}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>
-              );
-            })}
+          {isLoading
+            ? emptyState("Carregando alertas...")
+            : resolvedAlerts.length === 0
+              ? emptyState("Nenhum alerta resolvido.")
+              : resolvedAlerts.map((alert) => renderAlertCard(alert, true))}
         </TabsContent>
 
         <TabsContent value="all" className="space-y-4 mt-6">
-          {isLoading ? (
-            <Card>
-              <CardHeader>
-                <p className="text-muted-foreground">Carregando alertas...</p>
-              </CardHeader>
-            </Card>
-          ) : null}
-
-          {!isLoading && errorMessage ? (
-            <Card>
-              <CardHeader>
-                <p className="text-destructive">{errorMessage}</p>
-              </CardHeader>
-            </Card>
-          ) : null}
-
-          {!isLoading && !errorMessage && filteredAlerts.length === 0 ? (
-            <Card>
-              <CardHeader>
-                <p className="text-muted-foreground">Nenhum alerta encontrado.</p>
-              </CardHeader>
-            </Card>
-          ) : null}
-
-          {filteredAlerts.map((alert) => {
-            const Icon = getAlertIcon(alert.severity);
-            return (
-              <Card
-                key={alert.id}
-                className={`hover:shadow-md transition-shadow ${
-                  alert.status === "resolved" ? "opacity-60" : ""
-                }`}
-              >
-                <CardHeader>
-                  <div
-                    className={cn(
-                      "flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between",
-                      pwaMode && "flex-col items-stretch",
-                    )}
-                  >
-                    <div className={cn("flex gap-4 min-w-0", pwaMode && "gap-3")}>
-                      <div
-                        className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                          alert.status === "resolved"
-                            ? "bg-green-100 text-green-700"
-                            : getSeverityColor(alert.severity)
-                        }`}
-                      >
-                        <Icon className="w-6 h-6" />
-                      </div>
-                      <div className={cn("space-y-2 min-w-0", pwaMode && "w-full")}>
-                        <div className={cn("flex items-center gap-2", pwaMode && "flex-wrap")}>
-                          <h3 className={cn("font-semibold text-lg", pwaMode && "text-base leading-tight")}>
-                            {alert.title}
-                          </h3>
-                          <Badge
-                            variant="outline"
-                            className={
-                              alert.status === "resolved"
-                                ? "bg-green-100 text-green-700"
-                                : getSeverityColor(alert.severity)
-                            }
-                          >
-                            {alert.status === "resolved"
-                              ? "Resolvido"
-                              : getSeverityLabel(alert.severity)}
-                          </Badge>
-                        </div>
-                        <p className="text-muted-foreground">{alert.description}</p>
-                        <div className={cn("flex items-center gap-4 text-sm", pwaMode && "flex-wrap gap-2")}>
-                          <Badge variant="secondary">{alert.category}</Badge>
-                          <span className="text-muted-foreground">{alert.timestamp}</span>
-                        </div>
-                      </div>
-                    </div>
-                    {alert.status === "active" && (
-                      <div className={cn("flex w-full gap-2 sm:w-auto sm:justify-end", pwaMode && "w-full")}>
-                        <Button variant="outline" size="sm" className={cn(pwaMode && "flex-1")}>
-                          Ver Detalhes
-                        </Button>
-                        <Button size="sm" className={cn(pwaMode && "flex-1")}>
-                          Resolver
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </CardHeader>
-              </Card>
-            );
-          })}
+          {isLoading
+            ? emptyState("Carregando alertas...")
+            : filteredAlerts.length === 0
+              ? emptyState("Nenhum alerta encontrado.")
+              : filteredAlerts.map((alert) => renderAlertCard(alert, alert.status === "resolved"))}
         </TabsContent>
       </Tabs>
+
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Configurar alertas</DialogTitle>
+            <DialogDescription>
+              Defina quando o NeXora deve avisar sobre vendas, estoque, clientes e metas.
+            </DialogDescription>
+          </DialogHeader>
+
+          {settingsLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Carregando configuração...
+            </div>
+          ) : (
+            <div className="space-y-5">
+              {!canEdit ? (
+                <p className="text-sm text-muted-foreground">
+                  Somente administradores podem alterar estas regras.
+                </p>
+              ) : null}
+
+              {settingsError ? <p className="text-sm text-destructive">{settingsError}</p> : null}
+              {settingsSaved ? (
+                <p className="text-sm text-emerald-600">Configuração salva.</p>
+              ) : null}
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <Label htmlFor="notify-email">Notificar por e-mail</Label>
+                    <p className="text-xs text-muted-foreground">Envia aviso quando um alerta disparar.</p>
+                  </div>
+                  <Switch
+                    id="notify-email"
+                    checked={settings.notify_email}
+                    disabled={!canEdit}
+                    onCheckedChange={(checked) => setSettings((s) => ({ ...s, notify_email: checked }))}
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <Label htmlFor="notify-app">Mostrar no painel</Label>
+                    <p className="text-xs text-muted-foreground">Exibe o alerta nesta tela e no sino.</p>
+                  </div>
+                  <Switch
+                    id="notify-app"
+                    checked={settings.notify_in_app}
+                    disabled={!canEdit}
+                    onCheckedChange={(checked) => setSettings((s) => ({ ...s, notify_in_app: checked }))}
+                  />
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <div className="rounded-lg border border-border p-3 space-y-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <Label htmlFor="sales-drop">Queda de vendas</Label>
+                    <Switch
+                      id="sales-drop"
+                      checked={settings.sales_drop_enabled}
+                      disabled={!canEdit}
+                      onCheckedChange={(checked) =>
+                        setSettings((s) => ({ ...s, sales_drop_enabled: checked }))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="sales-drop-pct">Disparar se cair mais de (%)</Label>
+                    <Input
+                      id="sales-drop-pct"
+                      type="number"
+                      min={1}
+                      max={100}
+                      disabled={!canEdit || !settings.sales_drop_enabled}
+                      value={settings.sales_drop_percent}
+                      onChange={(e) =>
+                        setSettings((s) => ({ ...s, sales_drop_percent: Number(e.target.value) }))
+                      }
+                      className="bg-input-background"
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-border p-3 space-y-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <Label htmlFor="stock-low">Estoque baixo</Label>
+                    <Switch
+                      id="stock-low"
+                      checked={settings.stock_low_enabled}
+                      disabled={!canEdit}
+                      onCheckedChange={(checked) =>
+                        setSettings((s) => ({ ...s, stock_low_enabled: checked }))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="stock-qty">Disparar abaixo de (unidades)</Label>
+                    <Input
+                      id="stock-qty"
+                      type="number"
+                      min={0}
+                      disabled={!canEdit || !settings.stock_low_enabled}
+                      value={settings.stock_low_qty}
+                      onChange={(e) =>
+                        setSettings((s) => ({ ...s, stock_low_qty: Number(e.target.value) }))
+                      }
+                      className="bg-input-background"
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-border p-3 space-y-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <Label htmlFor="inactive">Clientes inativos</Label>
+                    <Switch
+                      id="inactive"
+                      checked={settings.inactive_customers_enabled}
+                      disabled={!canEdit}
+                      onCheckedChange={(checked) =>
+                        setSettings((s) => ({ ...s, inactive_customers_enabled: checked }))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="inactive-days">Sem compra há (dias)</Label>
+                    <Input
+                      id="inactive-days"
+                      type="number"
+                      min={1}
+                      disabled={!canEdit || !settings.inactive_customers_enabled}
+                      value={settings.inactive_days}
+                      onChange={(e) =>
+                        setSettings((s) => ({ ...s, inactive_days: Number(e.target.value) }))
+                      }
+                      className="bg-input-background"
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-border p-3 space-y-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <Label htmlFor="finance-goal">Atraso de meta financeira</Label>
+                    <Switch
+                      id="finance-goal"
+                      checked={settings.finance_goal_enabled}
+                      disabled={!canEdit}
+                      onCheckedChange={(checked) =>
+                        setSettings((s) => ({ ...s, finance_goal_enabled: checked }))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="finance-pct">Alertar se a meta estiver abaixo de (%)</Label>
+                    <Input
+                      id="finance-pct"
+                      type="number"
+                      min={1}
+                      max={100}
+                      disabled={!canEdit || !settings.finance_goal_enabled}
+                      value={settings.finance_goal_percent}
+                      onChange={(e) =>
+                        setSettings((s) => ({ ...s, finance_goal_percent: Number(e.target.value) }))
+                      }
+                      className="bg-input-background"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setSettingsOpen(false)}>
+              Fechar
+            </Button>
+            <Button type="button" onClick={() => void saveSettings()} disabled={!canEdit || settingsSaving || settingsLoading}>
+              {settingsSaving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
