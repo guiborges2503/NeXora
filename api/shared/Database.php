@@ -32,7 +32,8 @@ class Database
             $this->connection = getConexaoDB1();
 
             if ($this->connection === null) {
-                throw new \RuntimeException('Falha ao conectar ao banco de dados');
+                $detail = function_exists('getLastDbConnectionError') ? getLastDbConnectionError() : null;
+                throw new \RuntimeException(self::connectionErrorMessage($detail));
             }
 
             $schema = validateDatabaseSchema($this->connection);
@@ -80,6 +81,27 @@ class Database
     public function lastInsertId(?string $name = null): string
     {
         return $this->getConnection()->lastInsertId($name);
+    }
+
+    private static function connectionErrorMessage(?string $detail): string
+    {
+        $detail = trim((string) $detail);
+        $isDev = function_exists('getEnvironment') && getEnvironment() === 'development';
+
+        if ($isDev && $detail !== '' && stripos($detail, 'Access denied') !== false) {
+            $ip = null;
+            if (preg_match("/@'([^']+)'/", $detail, $matches)) {
+                $ip = $matches[1];
+            }
+
+            $ipHint = $ip ? " Libere o IP {$ip}" : ' Libere o IP deste computador';
+
+            return 'O MySQL da Hostinger recusou o acesso remoto.'
+                . $ipHint
+                . ' (ou % ) em Bancos de dados → MySQL remoto. O NeXora no WAMP usa esse MySQL, não um banco local.';
+        }
+
+        return 'Falha ao conectar ao banco de dados';
     }
 
     private function __clone() {}

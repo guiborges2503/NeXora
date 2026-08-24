@@ -8,7 +8,7 @@ const DEV_PORT = 5173
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const apiProxyTarget = env.VITE_API_PROXY_TARGET?.trim() || 'http://127.0.0.1:8000'
+  const apiProxyTarget = env.VITE_API_PROXY_TARGET?.trim() || 'http://localhost/NeXora'
 
   return {
   plugins: [
@@ -37,12 +37,12 @@ export default defineConfig(({ mode }) => {
       port: DEV_PORT,
       clientPort: DEV_PORT,
     },
-    // Dev: proxy /api → API local (8000) ou produção (VITE_API_PROXY_TARGET)
+    // Dev: proxy /api → Apache do WAMP (http://localhost/NeXora) ou outro VITE_API_PROXY_TARGET
     proxy: {
       '/api': {
         target: apiProxyTarget,
         changeOrigin: true,
-        secure: true,
+        secure: apiProxyTarget.startsWith('https://'),
       },
     },
   },

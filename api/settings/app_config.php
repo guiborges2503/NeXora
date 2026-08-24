@@ -40,6 +40,8 @@ if ($environment === 'development') {
         'http://127.0.0.1:5174',
         'http://localhost:5174',
         'http://localhost:3000',
+        'http://localhost',
+        'http://127.0.0.1',
     ]);
     define('CORS_FALLBACK_ORIGIN', 'http://127.0.0.1:5173');
     define('DEBUG_MODE', true);

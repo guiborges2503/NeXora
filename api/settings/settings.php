@@ -2,13 +2,10 @@
 /**
  * Configurações do banco de dados e aplicação - NeXora
  *
- * Banco: SEMPRE produção Hostinger (u276379167_nexora).
- * Não há banco MySQL local no WAMP.
+ * Banco: MySQL da Hostinger (não usa MySQL do WAMP).
  *
  * - Hostinger (site publicado): DB_HOST = localhost
- * - PC (npm run dev): DB_HOST = DB_REMOTE_HOST (MySQL remoto da Hostinger)
- *
- * Painel Hostinger → Bancos de dados → MySQL remoto → habilite seu IP e copie o host.
+ * - PC / WAMP: DB_HOST = DB_REMOTE_HOST (hostname do painel MySQL remoto)
  */
 
 define('PAGE_TITULO', 'TCC');
@@ -25,14 +22,13 @@ define('NAME_SESSION', 'tcc_web');
 define('DB_DRIVER', 'mysql');
 define('DB_CHARSET', 'utf8mb4');
 define('DB_PORT', '3306');
-define('DB_NAME', 'u276379167_nexora');
-define('DB_USER', 'u276379167_nexora');
-define('DB_PASS', getenv('DB_PASS') ?: "c\$2+iaxy3F#");
+define('DB_NAME', 'u314950627_nexora');
+define('DB_USER', 'u314950627_nexora');
+define('DB_PASS', getenv('DB_PASS') ?: 'qBnGx|gdH7$N');
 define('DB_TARGET', 'production');
 
-// MySQL remoto Hostinger (npm run dev no PC)
-// Painel → Bancos de dados → MySQL remoto → libere o IP do PC (ou Any Host %)
-define('DB_REMOTE_HOST', getenv('DB_REMOTE_HOST') ?: 'auth-db746.hstgr.io');
+// Hostname remoto (hPanel → MySQL remoto). Não use auth-db antigo de outra conta.
+define('DB_REMOTE_HOST', getenv('DB_REMOTE_HOST') ?: 'srv806.hstgr.io');
 
 $appEnvironment = function_exists('getEnvironment') ? getEnvironment() : 'production';
 define('DB_HOST', $appEnvironment === 'production' ? 'localhost' : DB_REMOTE_HOST);

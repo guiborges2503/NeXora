@@ -38,6 +38,7 @@ import { getCurrentUserId } from "@/config/favorites";
 import { getStoredUser } from "@/config/currentUser";
 import { isOpenRouterConfigured } from "@/config/openRouter";
 import { cn } from "@/components/ui/utils";
+import { MarkdownMessage } from "@/components/chat/MarkdownMessage";
 
 type ChatTurn = {
   id: string;
@@ -487,7 +488,11 @@ export function EditAiReportPage() {
                         chat.role === "user" ? "bg-primary text-primary-foreground ml-8" : "bg-muted mr-8"
                       )}
                     >
-                      {chat.content}
+                      {chat.role === "assistant" ? (
+                        <MarkdownMessage content={chat.content} />
+                      ) : (
+                        chat.content
+                      )}
                     </div>
                   ))}
                 </div>

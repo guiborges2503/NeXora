@@ -12,6 +12,7 @@ import {
   Building2,
   Sparkles,
   KeyRound,
+  Database,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
@@ -42,6 +43,7 @@ const configSubItems = [
   { icon: Shield, label: "Permissões", path: "/permissions" },
   { icon: FileText, label: "Auditoria", path: "/audit" },
   { icon: Building2, label: "Empresa", path: "/settings/company" },
+  { icon: Database, label: "Banco de dados", path: "/settings/data-sources" },
   { icon: KeyRound, label: "OpenRouter", path: "/settings/openrouter" },
 ];
 

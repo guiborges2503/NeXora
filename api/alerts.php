@@ -11,16 +11,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-    \Shared\Response::error('Método não permitido', 405)->send();
-}
-
 try {
     $request = new \Shared\Request();
     $authUser = \Shared\AuthGuard::requireAuth($request);
-    \Shared\AuthGuard::requirePermission($authUser, 'alerts.read');
-
+    $method = $_SERVER['REQUEST_METHOD'];
+    $action = (string) $request->getQueryParam('action', '');
+    $id = (int) $request->getQueryParam('id', 0);
     $db = \Shared\Database::getInstance()->getConnection();
+    $settingsRepo = new \App\Repositories\AlertSettingsRepository($db);
+
+    if ($method === 'GET' && $action === 'settings') {
+        \Shared\AuthGuard::requirePermission($authUser, 'alerts.read');
+        \Shared\Response::success($settingsRepo->get())->send();
+    }
+
+    if ($method === 'PUT' || $method === 'PATCH') {
+        if ($action === 'resolve') {
+            \Shared\AuthGuard::requirePermission($authUser, 'alerts.read');
+            if ($id <= 0) {
+                \Shared\Response::error('Informe o id do alerta', 400)->send();
+            }
+            if (!$settingsRepo->markResolved($id, (int) $authUser['id'])) {
+                \Shared\Response::notFound('Alerta não encontrado')->send();
+            }
+            \Shared\Response::success(['id' => $id], 200, 'Alerta resolvido')->send();
+        }
+
+        \Shared\AuthGuard::requirePermission($authUser, 'users.write');
+        $settingsRepo->save($request->getBody(), (int) $authUser['id']);
+        \Shared\Response::success($settingsRepo->get(), 200, 'Configuração de alertas salva')->send();
+    }
+
+    if ($method !== 'GET') {
+        \Shared\Response::error('Método não permitido', 405)->send();
+    }
+
+    \Shared\AuthGuard::requirePermission($authUser, 'alerts.read');
 
     $stmt = $db->query(
         "SELECT
