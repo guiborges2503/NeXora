@@ -88,17 +88,33 @@ class Database
         $detail = trim((string) $detail);
         $isDev = function_exists('getEnvironment') && getEnvironment() === 'development';
 
-        if ($isDev && $detail !== '' && stripos($detail, 'Access denied') !== false) {
-            $ip = null;
-            if (preg_match("/@'([^']+)'/", $detail, $matches)) {
-                $ip = $matches[1];
+        if ($isDev && $detail !== '') {
+            if (stripos($detail, 'Access denied') !== false) {
+                $ip = null;
+                if (preg_match("/@'([^']+)'/", $detail, $matches)) {
+                    $ip = $matches[1];
+                }
+
+                $ipHint = $ip ? " Libere o IP {$ip}" : ' Libere o IP deste computador';
+
+                return 'O MySQL da Hostinger recusou o acesso remoto.'
+                    . $ipHint
+                    . ' (ou % ) em Bancos de dados → MySQL remoto. O NeXora no WAMP usa esse MySQL, não um banco local.';
             }
 
-            $ipHint = $ip ? " Libere o IP {$ip}" : ' Libere o IP deste computador';
+            if (
+                stripos($detail, '2002') !== false
+                || stripos($detail, 'timed out') !== false
+                || stripos($detail, 'não respondeu') !== false
+                || stripos($detail, 'failed to respond') !== false
+            ) {
+                $host = defined('DB_HOST') ? DB_HOST : 'srv806.hstgr.io';
 
-            return 'O MySQL da Hostinger recusou o acesso remoto.'
-                . $ipHint
-                . ' (ou % ) em Bancos de dados → MySQL remoto. O NeXora no WAMP usa esse MySQL, não um banco local.';
+                return "Não foi possível alcançar o MySQL remoto ({$host}:3306). "
+                    . 'No hPanel, confirme o host em Bancos de dados → MySQL remoto, '
+                    . 'libere seu IP (ou %) e verifique firewall/VPN. '
+                    . 'Detalhe: ' . $detail;
+            }
         }
 
         return 'Falha ao conectar ao banco de dados';

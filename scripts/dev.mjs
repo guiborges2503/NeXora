@@ -13,9 +13,9 @@ function readApiProxyTarget() {
     const envPath = path.join(process.cwd(), ".env.development");
     const content = fs.readFileSync(envPath, "utf8");
     const match = content.match(/^VITE_API_PROXY_TARGET=(.+)$/m);
-    return match?.[1]?.trim() || "http://localhost/NeXora";
+    return match?.[1]?.trim() || "http://127.0.0.1/NeXora";
   } catch {
-    return `http://127.0.0.1:${API_PORT}`;
+    return "http://127.0.0.1/NeXora";
   }
 }
 
