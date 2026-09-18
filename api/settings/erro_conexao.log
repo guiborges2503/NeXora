@@ -50,3 +50,37 @@
 2026-08-24 10:48:41 - Erro de conexão (mysql): SQLSTATE[HY000] [1045] Access denied for user 'u314950627_nexora'@'45.238.231.2' (using password: YES)
 2026-08-24 10:50:42 - Erro de conexão (mysql): SQLSTATE[HY000] [1045] Access denied for user 'u314950627_nexora'@'45.238.231.2' (using password: YES)
 2026-08-24 10:51:55 - Erro de conexão (mysql): SQLSTATE[HY000] [1045] Access denied for user 'u314950627_nexora'@'45.238.231.2' (using password: YES)
+2026-08-24 20:11:18 - Erro de conexão (mysql): SQLSTATE[HY000] [2002] Uma tentativa de conexão falhou porque o componente conectado não respondeu
+corretamente após um período de tempo ou a conexão estabelecida falhou
+porque o host conectado não respondeu
+2026-08-24 20:11:43 - Erro de conexão (mysql): SQLSTATE[HY000] [2002] Uma tentativa de conexão falhou porque o componente conectado não respondeu
+corretamente após um período de tempo ou a conexão estabelecida falhou
+porque o host conectado não respondeu
+2026-08-24 20:12:27 - Erro de conexão (mysql): SQLSTATE[HY000] [2002] Uma tentativa de conexão falhou porque o componente conectado não respondeu
+corretamente após um período de tempo ou a conexão estabelecida falhou
+porque o host conectado não respondeu
+2026-08-24 20:13:01 - Erro de conexão (mysql): SQLSTATE[HY000] [2002] Uma tentativa de conexão falhou porque o componente conectado não respondeu
+corretamente após um período de tempo ou a conexão estabelecida falhou
+porque o host conectado não respondeu
+2026-08-24 20:13:18 - Erro de conexão (mysql): SQLSTATE[HY000] [2002] Uma tentativa de conexão falhou porque o componente conectado não respondeu
+corretamente após um período de tempo ou a conexão estabelecida falhou
+porque o host conectado não respondeu
+2026-08-24 20:13:39 - Erro de conexão (mysql): SQLSTATE[HY000] [2002] Uma tentativa de conexão falhou porque o componente conectado não respondeu
+corretamente após um período de tempo ou a conexão estabelecida falhou
+porque o host conectado não respondeu.
+
+2026-08-24 20:15:36 - Erro de conexão (mysql): SQLSTATE[HY000] [2002] Uma tentativa de conexão falhou porque o componente conectado não respondeu
+corretamente após um período de tempo ou a conexão estabelecida falhou
+porque o host conectado não respondeu
+2026-08-24 20:16:11 - Erro de conexão (mysql): SQLSTATE[HY000] [2002] Uma tentativa de conexão falhou porque o componente conectado não respondeu
+corretamente após um período de tempo ou a conexão estabelecida falhou
+porque o host conectado não respondeu
+2026-08-24 20:16:32 - Erro de conexão (mysql): SQLSTATE[HY000] [2002] Uma tentativa de conexão falhou porque o componente conectado não respondeu
+corretamente após um período de tempo ou a conexão estabelecida falhou
+porque o host conectado não respondeu
+2026-08-24 20:17:43 - Erro de conexão (mysql): SQLSTATE[HY000] [2002] Uma tentativa de conexão falhou porque o componente conectado não respondeu
+corretamente após um período de tempo ou a conexão estabelecida falhou
+porque o host conectado não respondeu
+2026-08-24 20:26:22 - Erro de conexão (mysql): SQLSTATE[HY000] [2002] Uma tentativa de conexão falhou porque o componente conectado não respondeu
+corretamente após um período de tempo ou a conexão estabelecida falhou
+porque o host conectado não respondeu

@@ -236,7 +236,8 @@ export function Topbar({ onMenuClick, showMenuButton = false, compact = false }:
   return (
     <header
       className={cn(
-        "relative z-10 h-16 border-b border-border bg-card/75 px-6 flex items-center justify-between shadow-sm shadow-primary/5 backdrop-blur-2xl",
+        // Mesma altura do bloco do logo no Sidebar (h-24) para a borda inferior alinhar
+        "relative z-10 h-24 border-b border-border bg-card/75 px-6 flex items-center justify-between shadow-sm shadow-primary/5 backdrop-blur-2xl",
         isCompact && "h-14 px-3",
       )}
     >

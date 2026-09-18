@@ -29,7 +29,11 @@ import {
   type ApiAiConversation,
   type ApiChatTurn,
 } from "@/config/aiConversationsApi";
-import { fallbackTitleFromMessages, generateSmartConversationTitle } from "@/config/aiConversationTitle";
+import {
+  fallbackTitleFromMessages,
+  generateSmartConversationTitle,
+  shortenConversationTitle,
+} from "@/config/aiConversationTitle";
 import { AI_ASSISTANT_SYSTEM_PROMPT, detectDashboardIntent } from "@/config/aiAssistantPrompt";
 import { MarkdownMessage } from "@/components/chat/MarkdownMessage";
 
@@ -441,8 +445,12 @@ export function AIAssistantPage() {
                           : "border-transparent hover:bg-accent hover:border-border",
                       )}
                     >
-                      <p className="font-medium truncate">{c.title}</p>
-                      <p className="text-xs text-muted-foreground">{formatUpdated(c.updated_at)}</p>
+                      <p className="font-medium text-sm leading-snug break-words line-clamp-2">
+                        {shortenConversationTitle(c.title)}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {formatUpdated(c.updated_at)}
+                      </p>
                     </button>
                   );
                 })}

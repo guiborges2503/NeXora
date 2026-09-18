@@ -61,7 +61,17 @@ class AuthController
 
             return Response::success($user, 200, 'Login realizado');
         } catch (RuntimeException $e) {
-            return Response::unauthorized($e->getMessage());
+            $message = $e->getMessage();
+            $isDbDown = stripos($message, 'banco') !== false
+                || stripos($message, 'conectar') !== false
+                || stripos($message, 'MySQL') !== false
+                || stripos($message, 'Hostinger') !== false;
+
+            if ($isDbDown) {
+                return Response::error($message, 503);
+            }
+
+            return Response::unauthorized($message);
         }
     }
 
