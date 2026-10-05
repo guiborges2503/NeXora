@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useRef, useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { API_BASE_URL } from "@/config/api";
 import {
@@ -395,7 +396,7 @@ export function LoginNeXora({
                   aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
                   style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", width: 34, height: 34, border: "none", background: "transparent", color: "rgba(198,188,224,.62)", cursor: "pointer", fontSize: 15, display: "grid", placeItems: "center" }}
                 >
-                  {showPassword ? "🙈" : "👁"}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
 
