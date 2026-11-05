@@ -112,7 +112,13 @@ linhas (CT-028).
 |---|---|---|
 | Unitário (PHPUnit) | `/c/wamp64/bin/php/php8.2.26/php.exe vendor/bin/phpunit --testdox` | `tests/results/phpunit-junit.xml` e `phpunit-testdox.txt` |
 | Integração/API (Postman/Newman) | `bash scripts/reset-test-db.sh && npm run test:api` (com o WAMP ligado) | `tests/results/newman-relatorio.html` e `newman-junit.xml` |
-| Sistema/interface (Selenium) | _a configurar_ | |
+| Sistema/interface (Selenium) | `bash scripts/reset-test-db.sh`, depois `npm run dev:vite` em um terminal e `npm run test:ui` em outro | Capturas em `tests/results/ui/`. `npm run test:ui:ci` gera `tests/results/ui-junit.xml` |
+
+Os testes Selenium usam o Chrome em modo headless e o Selenium Manager baixa o driver
+sozinho. Para ver o navegador abrindo, use `UI_HEADLESS=0 npm run test:ui`. Para outro
+navegador, use `UI_BROWSER=MicrosoftEdge` ou `UI_BROWSER=firefox` (útil no RNF-03). O
+OpenRouter é **simulado no navegador** durante o UI-05, então nenhuma chamada real à IA
+é feita e a chave usada é fictícia.
 
 A coleção e o ambiente do Postman ficam em `tests/api/`. Para abrir no Postman, use
 *Import* nos dois arquivos JSON e selecione o ambiente **NeXora - Local (nexora_test)**.
@@ -133,6 +139,11 @@ Mapa dos testes automatizados (veja a aba *Automacao* da planilha):
 | API-07 | idem | RF-09, CT-030 |
 | API-08a a API-08d | idem | RF-04, CT-014, CT-015 |
 | API-09a, API-09b | idem | RF-02, CT-006 |
+| UI-01 | `tests/ui/sistema.spec.js` | RF-01, CT-001 |
+| UI-02 | idem | RF-02, CT-006 |
+| UI-03 | idem | RF-03, CT-010 |
+| UI-04 | idem | RF-04, CT-014 |
+| UI-05 | idem | RF-06, CT-022 |
 
 ## 11. Pipeline CI/CD
 
@@ -146,6 +157,7 @@ Mapa dos testes automatizados (veja a aba *Automacao* da planilha):
 |---|---|---|
 | **PHPUnit + verificação da API** (é o job usado no TDD) | PHP 8.2, `composer install`, `reset-test-db.sh`, PHPUnit e `health.php` ligado ao `nexora_test` | `resultados-testes-N` |
 | **Integração/API (Postman + Newman)** | PHP 8.2 e Node 22, `npm ci`, `reset-test-db.sh`, API no servidor embutido do PHP, Newman | `resultados-api-N` (relatório HTML e JUnit) |
+| **Sistema/interface (Selenium)** | PHP 8.2 e Node 22, `npm ci`, `reset-test-db.sh`, API e front-end (Vite) no ar, Selenium com Chrome headless | `resultados-ui-N` (JUnit e capturas de tela) |
 
 O resumo de cada job aparece na página da execução. Os jobs ficam separados para que um
 defeito aberto na API não atrapalhe a demonstração do ciclo Red-Green-Refactor no job

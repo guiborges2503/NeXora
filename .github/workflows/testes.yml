@@ -235,3 +235,119 @@ jobs:
             tests/results/
             php-server.log
           if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # Testes de sistema/interface (Selenium WebDriver + Chrome headless)
+  # O OpenRouter é simulado no navegador; nenhuma chamada real à IA é feita.
+  # ---------------------------------------------------------------------------
+  ui:
+    name: Sistema/interface (Selenium)
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot_ci"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      MYSQL_BIN: mysql
+      MYSQL_ROOT_USER: root
+      MYSQL_ROOT_PASS: root_ci
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: 3306
+
+    steps:
+      # 1. Preparação do ambiente
+      - name: Obter o código
+        uses: actions/checkout@v4
+
+      - name: Configurar PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_mysql, mbstring, openssl, curl
+          coverage: none
+
+      - name: Configurar Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      # 2. Instalação
+      - name: Instalar dependências (npm, inclui Selenium e Mocha)
+        run: npm ci --no-audit --no-fund
+
+      # 3. Banco de teste, API e front-end no ar
+      - name: Criar banco nexora_test e massa de dados
+        run: bash scripts/reset-test-db.sh
+
+      - name: Configurar api/.env de teste
+        run: cp api/.env.testing.example api/.env
+
+      - name: Subir a API e o front-end
+        env:
+          VITE_API_PROXY_TARGET: http://127.0.0.1:8000
+          BROWSER: none
+        run: |
+          php -S 127.0.0.1:8000 -t . > php-server.log 2>&1 &
+          npx vite --host 127.0.0.1 --port 5173 --strictPort > vite.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:5173/auth/login > /dev/null \
+               && curl -sf http://127.0.0.1:5173/api/health.php > /dev/null; then
+              echo "API e front-end no ar"; exit 0
+            fi
+            sleep 1
+          done
+          echo "Ambiente não subiu"; cat php-server.log vite.log; exit 1
+
+      # 4. Execução dos testes
+      - name: Testes de sistema/interface (Selenium)
+        run: |
+          mkdir -p tests/results
+          google-chrome --version
+          npm run test:ui:ci
+
+      # 5. Publicação do resultado
+      - name: Resumo da execução
+        if: always()
+        run: |
+          {
+            echo "## Testes de sistema/interface (Selenium) - NeXora (P2/TQS)"
+            echo ""
+            echo "Commit: \`${GITHUB_SHA::7}\` | Branch: \`${GITHUB_REF_NAME}\`"
+            echo ""
+            if [ -f tests/results/ui-junit.xml ]; then
+              php -r '
+                $x = simplexml_load_file("tests/results/ui-junit.xml");
+                echo "| Teste | Resultado |\n|---|---|\n";
+                foreach ($x->xpath("//testcase") as $t) {
+                  $ok = !isset($t->failure) && !isset($t->error);
+                  printf("| %s | %s |\n", $t["name"], $ok ? "Aprovado" : "Reprovado");
+                }
+              '
+            else
+              echo "Relatório do Selenium não foi gerado."
+            fi
+            echo ""
+            echo "Capturas de tela no artefato **resultados-ui-${GITHUB_RUN_NUMBER}**."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publicar relatórios e capturas como artefato
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultados-ui-${{ github.run_number }}
+          path: |
+            tests/results/
+            php-server.log
+            vite.log
+          if-no-files-found: warn

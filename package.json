@@ -13,7 +13,9 @@
     "schema:check": "php api/tests/schema_check.php",
     "test:unit": "php vendor/bin/phpunit --testdox",
     "test:api": "newman run tests/api/NeXora.postman_collection.json -e tests/api/NeXora-local.postman_environment.json --reporters cli,junit,htmlextra --reporter-junit-export tests/results/newman-junit.xml --reporter-htmlextra-export tests/results/newman-relatorio.html --reporter-htmlextra-title \"NeXora - Testes de API (P2 TQS)\"",
-    "test:db:reset": "bash scripts/reset-test-db.sh"
+    "test:db:reset": "bash scripts/reset-test-db.sh",
+    "test:ui": "mocha \"tests/ui/**/*.spec.js\" --timeout 90000",
+    "test:ui:ci": "mocha \"tests/ui/**/*.spec.js\" --timeout 90000 --reporter mocha-junit-reporter --reporter-options mochaFile=tests/results/ui-junit.xml"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -74,8 +76,11 @@
   "devDependencies": {
     "@tailwindcss/vite": "4.1.12",
     "@vitejs/plugin-react": "4.7.0",
+    "mocha": "^10.8.2",
+    "mocha-junit-reporter": "^2.2.1",
     "newman": "^6.2.3",
     "newman-reporter-htmlextra": "^1.23.1",
+    "selenium-webdriver": "^4.51.0",
     "tailwindcss": "4.1.12",
     "vite": "^6.4.1"
   },
