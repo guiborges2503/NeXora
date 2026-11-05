@@ -17,21 +17,33 @@ define('SESSAO', 'TCC');
 define('NAME_SESSION', 'tcc_web');
 
 // ---------------------------------------------------------------------------
-// Banco de dados — MySQL Hostinger (produção)
+// Banco de dados
+//
+// Nenhuma senha fica no código-fonte. Todos os valores vêm de api/.env
+// (arquivo fora do git) ou de variáveis de ambiente do servidor.
+//
+// - Ambiente de testes local (P2/TQS): copie api/.env.testing.example para
+//   api/.env  →  banco nexora_test no MySQL do WAMP.
+// - Produção (Hostinger): api/.env no servidor com DB_NAME, DB_USER e DB_PASS.
 // ---------------------------------------------------------------------------
 define('DB_DRIVER', 'mysql');
 define('DB_CHARSET', 'utf8mb4');
-define('DB_PORT', '3306');
-define('DB_NAME', 'u314950627_nexora');
-define('DB_USER', 'u314950627_nexora');
-define('DB_PASS', getenv('DB_PASS') ?: 'qBnGx|gdH7$N');
-define('DB_TARGET', 'production');
+define('DB_PORT', getenv('DB_PORT') ?: '3306');
+define('DB_NAME', getenv('DB_NAME') ?: 'u314950627_nexora');
+define('DB_USER', getenv('DB_USER') ?: 'u314950627_nexora');
+define('DB_PASS', getenv('DB_PASS') ?: '');
+define('DB_TARGET', getenv('DB_TARGET') ?: 'production');
 
-// Hostname remoto (hPanel → MySQL remoto). Não use auth-db antigo de outra conta.
+// Hostname remoto (hPanel → MySQL remoto). Usado só se DB_HOST não for informado.
 define('DB_REMOTE_HOST', getenv('DB_REMOTE_HOST') ?: 'srv806.hstgr.io');
 
 $appEnvironment = function_exists('getEnvironment') ? getEnvironment() : 'production';
-define('DB_HOST', $appEnvironment === 'production' ? 'localhost' : DB_REMOTE_HOST);
+$dbHostFromEnv = getenv('DB_HOST');
+if ($dbHostFromEnv !== false && $dbHostFromEnv !== '') {
+    define('DB_HOST', $dbHostFromEnv);
+} else {
+    define('DB_HOST', $appEnvironment === 'production' ? 'localhost' : DB_REMOTE_HOST);
+}
 
 // ---------------------------------------------------------------------------
 // Demais configurações (podem usar api/.env como override opcional)
