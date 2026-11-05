@@ -10,7 +10,10 @@
     "dev": "node scripts/dev.mjs",
     "dev:vite": "vite",
     "dev:api": "php -S 127.0.0.1:8000 -t .",
-    "schema:check": "php api/tests/schema_check.php"
+    "schema:check": "php api/tests/schema_check.php",
+    "test:unit": "php vendor/bin/phpunit --testdox",
+    "test:api": "newman run tests/api/NeXora.postman_collection.json -e tests/api/NeXora-local.postman_environment.json --reporters cli,junit,htmlextra --reporter-junit-export tests/results/newman-junit.xml --reporter-htmlextra-export tests/results/newman-relatorio.html --reporter-htmlextra-title \"NeXora - Testes de API (P2 TQS)\"",
+    "test:db:reset": "bash scripts/reset-test-db.sh"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -71,6 +74,8 @@
   "devDependencies": {
     "@tailwindcss/vite": "4.1.12",
     "@vitejs/plugin-react": "4.7.0",
+    "newman": "^6.2.3",
+    "newman-reporter-htmlextra": "^1.23.1",
     "tailwindcss": "4.1.12",
     "vite": "^6.4.1"
   },

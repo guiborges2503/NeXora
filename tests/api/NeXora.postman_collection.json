@@ -1,0 +1,1050 @@
+{
+  "info": {
+    "name": "NeXora - Testes de Integração/API (P2 TQS)",
+    "description": "Testes de integração da API do NeXora (Projeto P2 - Testes e Qualidade de Software).\n\nExecutar SEMPRE contra o banco local nexora_test (scripts/reset-test-db.sh), nunca contra produção.\nIDs seguem a aba 'Automacao' da planilha: API-01 a API-07 (planejados) e API-08/API-09 (fluxos positivos com limpeza de dados).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 - Preparação (login dos perfis)",
+      "description": "Obtém os tokens dos perfis de teste e guarda em variáveis do ambiente (encadeamento de dados).",
+      "item": [
+        {
+          "name": "Login Administrador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth_login.php",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth_login.php"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{senhaTeste}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"Contrato: corpo JSON com 'success' booleano\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property(\"success\").that.is.a(\"boolean\");",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Perfil retornado é admin\", () => pm.expect(body.data.role).to.eql(\"admin\"));",
+                  "pm.test(\"Token JWT emitido\", () => pm.expect(body.data.token).to.be.a(\"string\").and.match(/^[\\w-]+\\.[\\w-]+\\.[\\w-]+$/));",
+                  "pm.environment.set(\"tokenAdmin\", body.data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Gestor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth_login.php",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth_login.php"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{gestorEmail}}\",\n  \"password\": \"{{senhaTeste}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"Contrato: corpo JSON com 'success' booleano\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property(\"success\").that.is.a(\"boolean\");",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Perfil retornado é manager\", () => pm.expect(body.data.role).to.eql(\"manager\"));",
+                  "pm.test(\"Token JWT emitido\", () => pm.expect(body.data.token).to.be.a(\"string\").and.match(/^[\\w-]+\\.[\\w-]+\\.[\\w-]+$/));",
+                  "pm.environment.set(\"tokenGestor\", body.data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Visualizador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth_login.php",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth_login.php"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{visualizadorEmail}}\",\n  \"password\": \"{{senhaTeste}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"Contrato: corpo JSON com 'success' booleano\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property(\"success\").that.is.a(\"boolean\");",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Perfil retornado é viewer\", () => pm.expect(body.data.role).to.eql(\"viewer\"));",
+                  "pm.test(\"Token JWT emitido\", () => pm.expect(body.data.token).to.be.a(\"string\").and.match(/^[\\w-]+\\.[\\w-]+\\.[\\w-]+$/));",
+                  "pm.environment.set(\"tokenVisualizador\", body.data.token);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "API-01 a API-03 - Autenticação (RF-01, RNF-02)",
+      "item": [
+        {
+          "name": "API-01 - Login válido retorna 200 e token (CT-001)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth_login.php",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth_login.php"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{gestorEmail}}\",\n  \"password\": \"{{senhaTeste}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-01: status 200\", () => pm.response.to.have.status(200));",
+                  "",
+                  "pm.test(\"Contrato: corpo JSON com 'success' booleano\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property(\"success\").that.is.a(\"boolean\");",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test(\"API-01: success = true e mensagem 'Login realizado'\", function () {",
+                  "    pm.expect(body.success).to.eql(true);",
+                  "    pm.expect(body.message).to.eql(\"Login realizado\");",
+                  "});",
+                  "pm.test(\"API-01: dados do usuário corretos\", function () {",
+                  "    pm.expect(body.data.email).to.eql(pm.environment.get(\"gestorEmail\"));",
+                  "    pm.expect(body.data.status).to.eql(\"active\");",
+                  "});",
+                  "pm.test(\"API-01: resposta não expõe hash de senha\", () => pm.expect(body.data).to.not.have.property(\"password_hash\"));",
+                  "pm.test(\"API-01: token salvo em variável do ambiente\", function () {",
+                  "    pm.expect(body.data.token).to.be.a(\"string\").and.not.empty;",
+                  "    pm.environment.set(\"tokenGestor\", body.data.token);",
+                  "});",
+                  "pm.test(\"API-01: tempo de resposta < 2000 ms\", () => pm.expect(pm.response.responseTime).to.be.below(2000));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-02 - Login com senha incorreta retorna 401 (CT-002)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth_login.php",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth_login.php"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{gestorEmail}}\",\n  \"password\": \"SenhaErrada#999\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-02: status 401\", () => pm.response.to.have.status(401));",
+                  "",
+                  "pm.test(\"Contrato: corpo JSON com 'success' booleano\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property(\"success\").that.is.a(\"boolean\");",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test(\"API-02: success = false\", () => pm.expect(body.success).to.eql(false));",
+                  "pm.test(\"API-02: nenhum token emitido\", () => pm.expect(JSON.stringify(body)).to.not.match(/\"token\"/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-02b - Login de usuário inativo é negado (CT-004)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth_login.php",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth_login.php"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{inativoEmail}}\",\n  \"password\": \"{{senhaTeste}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-02b: status 4xx\", () => pm.expect(pm.response.code).to.be.within(400, 499));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"API-02b: mensagem 'Usuário inativo'\", () => pm.expect(body.message).to.eql(\"Usuário inativo\"));",
+                  "pm.test(\"API-02b: nenhum token emitido\", () => pm.expect(JSON.stringify(body)).to.not.match(/\"token\"/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-03 - Listagem de dashboards sem token retorna 401 (CT-005a)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboards.php",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboards.php"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-03: status 401\", () => pm.response.to.have.status(401));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"API-03: nenhum dado retornado\", () => pm.expect(body.data === undefined || body.data === null || (Array.isArray(body.data) && body.data.length === 0)).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-03b - Token alterado retorna 401 (CT-005b)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAlterado}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboards.php",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboards.php"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Altera o último caractere da assinatura do token válido do gestor",
+                  "const t = pm.environment.get(\"tokenGestor\") || \"a.b.c\";",
+                  "const ultimo = t.slice(-1) === \"A\" ? \"B\" : \"A\";",
+                  "pm.environment.set(\"tokenAlterado\", t.slice(0, -1) + ultimo);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-03b: status 401\", () => pm.response.to.have.status(401));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"API-03b: nenhum dado retornado\", () => pm.expect(body.data === undefined || body.data === null || (Array.isArray(body.data) && body.data.length === 0)).to.be.true);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "API-04 - Usuários (RF-02)",
+      "item": [
+        {
+          "name": "API-04 - Cadastro com e-mail duplicado retorna 409 (CT-007)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users.php",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users.php"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Duplicado Teste\",\n  \"email\": \"{{gestorEmail}}\",\n  \"password\": \"{{senhaTeste}}\",\n  \"role\": \"viewer\",\n  \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-04: status 409\", () => pm.response.to.have.status(409));",
+                  "",
+                  "pm.test(\"Contrato: corpo JSON com 'success' booleano\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property(\"success\").that.is.a(\"boolean\");",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test(\"API-04: mensagem 'E-mail já cadastrado'\", () => pm.expect(body.message).to.eql(\"E-mail já cadastrado\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-04b - Conferir que não houve registro duplicado",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users.php",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users.php"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-04b: status 200\", () => pm.response.to.have.status(200));",
+                  "const usuarios = pm.response.json().data;",
+                  "const email = pm.environment.get(\"gestorEmail\");",
+                  "pm.test(\"API-04b: e-mail do gestor aparece uma única vez\", () => pm.expect(usuarios.filter(u => u.email === email).length).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "API-05 e API-06 - Controle de acesso (RF-03, RF-04)",
+      "item": [
+        {
+          "name": "API-05 - Visualizador tenta criar dashboard e recebe 403 (CT-012)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenVisualizador}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboards.php",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboards.php"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Dashboard Indevido Teste\",\n  \"embed_url\": \"https://app.powerbi.com/view?r=FICTICIO-INDEVIDO\",\n  \"category\": \"other\",\n  \"allowed_roles\": [\n    \"viewer\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-05: status 403\", () => pm.response.to.have.status(403));",
+                  "",
+                  "pm.test(\"Contrato: corpo JSON com 'success' booleano\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property(\"success\").that.is.a(\"boolean\");",
+                  "});",
+                  "pm.test(\"API-05: success = false\", () => pm.expect(pm.response.json().success).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-05b - Conferir que nenhum dashboard foi criado",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboards.php",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboards.php"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-05b: status 200\", () => pm.response.to.have.status(200));",
+                  "const nomes = pm.response.json().data.map(d => d.name);",
+                  "pm.test(\"API-05b: 'Dashboard Indevido Teste' não existe\", () => pm.expect(nomes).to.not.include(\"Dashboard Indevido Teste\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-06 - Visualizador acessa dashboard restrito por ID e recebe 403/404 (CT-016)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenVisualizador}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboards.php?id={{dashboardRestritoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboards.php"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "{{dashboardRestritoId}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-06: status 403 ou 404\", () => pm.expect(pm.response.code).to.be.oneOf([403, 404]));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"API-06: dados do dashboard restrito não são retornados\", () => pm.expect(body.data === undefined || body.data === null).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-06b - Listagem do Visualizador não contém dashboard restrito (CT-016)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenVisualizador}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboards.php",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboards.php"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-06b: status 200\", () => pm.response.to.have.status(200));",
+                  "const ids = pm.response.json().data.map(d => Number(d.id));",
+                  "pm.test(\"API-06b: dashboard restrito (id \" + pm.environment.get(\"dashboardRestritoId\") + \") ausente da lista\", () => pm.expect(ids).to.not.include(Number(pm.environment.get(\"dashboardRestritoId\"))));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "API-07 - OpenRouter (RF-09)",
+      "item": [
+        {
+          "name": "API-07 - Teste do OpenRouter com chave inválida retorna erro tratado (CT-030)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/openrouter_settings.php?action=test",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "openrouter_settings.php"
+              ],
+              "query": [
+                {
+                  "key": "action",
+                  "value": "test"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"api_key\": \"sk-or-invalida\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-07: status 4xx (erro tratado, sem 500)\", () => pm.expect(pm.response.code).to.be.within(400, 499));",
+                  "",
+                  "pm.test(\"Contrato: corpo JSON com 'success' booleano\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property(\"success\").that.is.a(\"boolean\");",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test(\"API-07: success = false com mensagem de erro\", function () {",
+                  "    pm.expect(body.success).to.eql(false);",
+                  "    pm.expect(body.message).to.be.a(\"string\").and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "API-08 e API-09 - Fluxos positivos com limpeza de dados",
+      "item": [
+        {
+          "name": "API-08a - Gestor cria dashboard com dados válidos (CT-014)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenGestor}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboards.php",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboards.php"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Dashboard API Teste\",\n  \"description\": \"Criado pelo Newman\",\n  \"embed_url\": \"https://app.powerbi.com/view?r=FICTICIO-API\",\n  \"category\": \"commercial\",\n  \"allowed_roles\": [\n    \"admin\",\n    \"manager\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-08a: status 201\", () => pm.response.to.have.status(201));",
+                  "",
+                  "pm.test(\"Contrato: corpo JSON com 'success' booleano\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property(\"success\").that.is.a(\"boolean\");",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test(\"API-08a: dashboard retornado com id e dados enviados\", function () {",
+                  "    pm.expect(body.data.id).to.be.ok;",
+                  "    pm.expect(body.data.name).to.eql(\"Dashboard API Teste\");",
+                  "    pm.expect(body.data.embed_url).to.eql(\"https://app.powerbi.com/view?r=FICTICIO-API\");",
+                  "});",
+                  "pm.environment.set(\"dashboardCriadoId\", body.data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-08b - Dashboard criado aparece por ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenGestor}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboards.php?id={{dashboardCriadoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboards.php"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "{{dashboardCriadoId}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-08b: status 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"API-08b: mesmo nome do cadastro\", () => pm.expect(pm.response.json().data.name).to.eql(\"Dashboard API Teste\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-08c - URL inválida é rejeitada (CT-015)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenGestor}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboards.php",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboards.php"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Dashboard URL Invalida\",\n  \"embed_url\": \"abc\",\n  \"category\": \"commercial\",\n  \"allowed_roles\": [\n    \"manager\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-08c: status 4xx\", () => pm.expect(pm.response.code).to.be.within(400, 499));",
+                  "pm.test(\"API-08c: erro no campo embed_url\", () => pm.expect(JSON.stringify(pm.response.json())).to.include(\"embed_url\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-08d - Limpeza: excluir dashboard criado",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenGestor}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/dashboards.php?id={{dashboardCriadoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "dashboards.php"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "{{dashboardCriadoId}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-08d: status 200\", () => pm.response.to.have.status(200));",
+                  "pm.environment.unset(\"dashboardCriadoId\");"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-09a - Administrador cadastra usuário válido (CT-006)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users.php",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users.php"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Usuario API Teste\",\n  \"email\": \"{{emailNovoUsuario}}\",\n  \"password\": \"{{senhaTeste}}\",\n  \"role\": \"viewer\",\n  \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set(\"emailNovoUsuario\", \"novo.api.\" + Date.now() + \"@nexora.local\");"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-09a: status 201\", () => pm.response.to.have.status(201));",
+                  "",
+                  "pm.test(\"Contrato: corpo JSON com 'success' booleano\", function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body).to.have.property(\"success\").that.is.a(\"boolean\");",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.test(\"API-09a: usuário criado com perfil Visualizador e ativo\", function () {",
+                  "    pm.expect(body.data.email).to.eql(pm.environment.get(\"emailNovoUsuario\"));",
+                  "    pm.expect(body.data.status).to.eql(\"active\");",
+                  "});",
+                  "pm.test(\"API-09a: resposta não expõe hash de senha\", () => pm.expect(body.data).to.not.have.property(\"password_hash\"));",
+                  "pm.environment.set(\"usuarioCriadoId\", body.data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "API-09b - Limpeza: excluir usuário criado",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users.php?id={{usuarioCriadoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users.php"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "{{usuarioCriadoId}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"API-09b: status 200\", () => pm.response.to.have.status(200));",
+                  "pm.environment.unset(\"usuarioCriadoId\");",
+                  "pm.environment.unset(\"emailNovoUsuario\");"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

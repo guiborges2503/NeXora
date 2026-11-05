@@ -111,15 +111,28 @@ linhas (CT-028).
 | Nível | Comando | Resultado |
 |---|---|---|
 | Unitário (PHPUnit) | `/c/wamp64/bin/php/php8.2.26/php.exe vendor/bin/phpunit --testdox` | `tests/results/phpunit-junit.xml` e `phpunit-testdox.txt` |
-| Integração/API (Postman/Newman) | _a configurar_ | |
+| Integração/API (Postman/Newman) | `bash scripts/reset-test-db.sh && npm run test:api` (com o WAMP ligado) | `tests/results/newman-relatorio.html` e `newman-junit.xml` |
 | Sistema/interface (Selenium) | _a configurar_ | |
 
-Mapa dos testes unitários (veja a aba *Automacao* da planilha):
+A coleção e o ambiente do Postman ficam em `tests/api/`. Para abrir no Postman, use
+*Import* nos dois arquivos JSON e selecione o ambiente **NeXora - Local (nexora_test)**.
+Os tokens dos perfis são obtidos na pasta *00 - Preparação* e guardados em variáveis do
+ambiente. Os fluxos que criam dados (API-08 e API-09) apagam o que criaram no final.
+
+Mapa dos testes automatizados (veja a aba *Automacao* da planilha):
 
 | ID | Arquivo | Requisito / caso |
 |---|---|---|
 | UT-01 a UT-05 | `tests/unit/SqlValidatorTest.php` | RF-08, CT-027, CT-028 |
 | UT-06 | `tests/unit/SecretCipherTest.php` | RF-05, RNF-02, CT-021 |
+| API-01, API-02, API-02b | `tests/api/NeXora.postman_collection.json` | RF-01, CT-001, CT-002, CT-004 |
+| API-03, API-03b | idem | RNF-02, CT-005 |
+| API-04, API-04b | idem | RF-02, CT-007 |
+| API-05, API-05b | idem | RF-03, CT-012 |
+| API-06, API-06b | idem | RF-04, CT-016 |
+| API-07 | idem | RF-09, CT-030 |
+| API-08a a API-08d | idem | RF-04, CT-014, CT-015 |
+| API-09a, API-09b | idem | RF-02, CT-006 |
 
 ## 11. Pipeline CI/CD
 
@@ -127,14 +140,16 @@ Mapa dos testes unitários (veja a aba *Automacao* da planilha):
 - **Execuções:** <https://github.com/guiborges2503/NeXora/actions/workflows/testes.yml>
 - **Gatilhos:** push nas branches `p2-testes` e `main`, abertura ou atualização de pull
   request para essas branches, e execução manual (*Run workflow*).
-- **Etapas:**
-  1. Obter o código e configurar o PHP 8.2
-  2. `composer install`
-  3. Subir um MySQL 8.4 temporário e rodar `scripts/reset-test-db.sh`
-  4. Rodar o PHPUnit
-  5. Verificar a API (`health.php` ligado ao `nexora_test`)
-  6. Publicar o resumo na página da execução e os relatórios como artefato
-     (`resultados-testes-N`)
+- **Jobs** (rodam em paralelo, cada um com o seu MySQL 8.4 temporário):
+
+| Job | Etapas | Artefato |
+|---|---|---|
+| **PHPUnit + verificação da API** (é o job usado no TDD) | PHP 8.2, `composer install`, `reset-test-db.sh`, PHPUnit e `health.php` ligado ao `nexora_test` | `resultados-testes-N` |
+| **Integração/API (Postman + Newman)** | PHP 8.2 e Node 22, `npm ci`, `reset-test-db.sh`, API no servidor embutido do PHP, Newman | `resultados-api-N` (relatório HTML e JUnit) |
+
+O resumo de cada job aparece na página da execução. Os jobs ficam separados para que um
+defeito aberto na API não atrapalhe a demonstração do ciclo Red-Green-Refactor no job
+unitário.
 
 O pipeline não usa nenhuma credencial real. O banco é criado e descartado a cada execução.
 

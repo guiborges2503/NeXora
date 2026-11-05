@@ -23,6 +23,9 @@ permissions:
   contents: read
 
 jobs:
+  # ---------------------------------------------------------------------------
+  # Testes unitários (PHPUnit). É o job usado no ciclo de TDD.
+  # ---------------------------------------------------------------------------
   testes:
     name: PHPUnit + verificação da API
     runs-on: ubuntu-latest
@@ -118,5 +121,117 @@ jobs:
           path: |
             tests/results/
             health.json
+            php-server.log
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
+  # Testes de integração/API (Postman + Newman)
+  # Job separado: falhas da API não interferem no ciclo de TDD do job unitário.
+  # ---------------------------------------------------------------------------
+  api:
+    name: Integração/API (Postman + Newman)
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot_ci"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      MYSQL_BIN: mysql
+      MYSQL_ROOT_USER: root
+      MYSQL_ROOT_PASS: root_ci
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: 3306
+
+    steps:
+      # 1. Preparação do ambiente
+      - name: Obter o código
+        uses: actions/checkout@v4
+
+      - name: Configurar PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_mysql, mbstring, openssl, curl
+          coverage: none
+
+      - name: Configurar Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      # 2. Instalação
+      - name: Instalar dependências (npm, inclui Newman)
+        run: npm ci --no-audit --no-fund
+
+      # 3. Banco de teste e API no ar
+      - name: Criar banco nexora_test e massa de dados
+        run: bash scripts/reset-test-db.sh
+
+      - name: Configurar api/.env de teste
+        run: cp api/.env.testing.example api/.env
+
+      - name: Subir a API (servidor embutido do PHP)
+        run: |
+          php -S 127.0.0.1:8000 -t . > php-server.log 2>&1 &
+          for i in $(seq 1 20); do
+            curl -sf http://127.0.0.1:8000/api/health.php > /dev/null && echo "API no ar" && exit 0
+            sleep 1
+          done
+          echo "API não respondeu"; cat php-server.log; exit 1
+
+      # 4. Execução dos testes
+      - name: Testes de integração/API (Newman)
+        run: |
+          mkdir -p tests/results
+          npx newman run tests/api/NeXora.postman_collection.json \
+            -e tests/api/NeXora-local.postman_environment.json \
+            --env-var baseUrl=http://127.0.0.1:8000/api \
+            --reporters cli,junit,htmlextra \
+            --reporter-junit-export tests/results/newman-junit.xml \
+            --reporter-htmlextra-export tests/results/newman-relatorio.html \
+            --reporter-htmlextra-title "NeXora - Testes de API (P2 TQS)"
+
+      # 5. Publicação do resultado
+      - name: Resumo da execução
+        if: always()
+        run: |
+          {
+            echo "## Testes de integração/API - NeXora (P2/TQS)"
+            echo ""
+            echo "Commit: \`${GITHUB_SHA::7}\` | Branch: \`${GITHUB_REF_NAME}\`"
+            echo ""
+            if [ -f tests/results/newman-junit.xml ]; then
+              php -r '
+                $x = simplexml_load_file("tests/results/newman-junit.xml");
+                echo "| Requisição | Verificações | Falhas |\n|---|---|---|\n";
+                foreach ($x->testsuite as $s) {
+                  printf("| %s | %d | %d |\n", $s["name"], $s["tests"], $s["failures"]);
+                }
+              '
+            else
+              echo "Relatório do Newman não foi gerado."
+            fi
+            echo ""
+            echo "Relatório HTML completo no artefato **resultados-api-${GITHUB_RUN_NUMBER}**."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publicar relatórios como artefato
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultados-api-${{ github.run_number }}
+          path: |
+            tests/results/
             php-server.log
           if-no-files-found: warn
