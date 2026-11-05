@@ -1,0 +1,122 @@
+# =============================================================================
+# Pipeline de testes do NeXora (Projeto P2 / Testes e Qualidade de Software)
+#
+# Gatilhos: envio de código (push) nas branches principais do projeto e
+# abertura/atualização de pull request, conforme a seção 9.15 do manual.
+#
+# Etapas: preparação do ambiente → instalação → banco de teste → testes
+#         → publicação do resultado.
+#
+# Nenhuma credencial real é usada: o banco é um MySQL temporário do próprio
+# GitHub Actions, com os dados fictícios de database/test.
+# =============================================================================
+name: Testes automatizados
+
+on:
+  push:
+    branches: [p2-testes, main]
+  pull_request:
+    branches: [p2-testes, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  testes:
+    name: PHPUnit + verificação da API
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot_ci"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      MYSQL_BIN: mysql
+      MYSQL_ROOT_USER: root
+      MYSQL_ROOT_PASS: root_ci
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: 3306
+
+    steps:
+      # 1. Preparação do ambiente
+      - name: Obter o código
+        uses: actions/checkout@v4
+
+      - name: Configurar PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_mysql, mbstring, openssl, curl
+          coverage: none
+          tools: composer:v2
+
+      # 2. Instalação
+      - name: Instalar dependências (Composer)
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      # 3. Banco de teste com dados fictícios
+      - name: Criar banco nexora_test e massa de dados
+        run: bash scripts/reset-test-db.sh
+
+      - name: Configurar api/.env de teste
+        run: cp api/.env.testing.example api/.env
+
+      # 4. Execução dos testes
+      - name: Testes unitários (PHPUnit)
+        run: vendor/bin/phpunit --testdox
+
+      - name: Verificação da API ligada ao banco de teste (health check)
+        run: |
+          php -S 127.0.0.1:8000 -t . > php-server.log 2>&1 &
+          for i in $(seq 1 20); do
+            curl -s http://127.0.0.1:8000/api/health.php > health.json && break
+            sleep 1
+          done
+          cat health.json
+          php -r '
+            $h = json_decode(file_get_contents("health.json"), true);
+            $ok = ($h["data"]["database"] ?? "") === "connected"
+               && ($h["data"]["db_name"] ?? "") === "nexora_test"
+               && ($h["data"]["schema"]["ok"] ?? false) === true;
+            if (!$ok) { fwrite(STDERR, "API não está ligada ao banco de teste\n"); exit(1); }
+            echo "API OK: banco nexora_test conectado e schema completo\n";
+          '
+
+      # 5. Publicação do resultado
+      - name: Resumo da execução
+        if: always()
+        run: |
+          {
+            echo "## Resultado dos testes - NeXora (P2/TQS)"
+            echo ""
+            echo "Commit: \`${GITHUB_SHA::7}\` | Branch: \`${GITHUB_REF_NAME}\`"
+            echo ""
+            if [ -f tests/results/phpunit-testdox.txt ]; then
+              echo '```'
+              cat tests/results/phpunit-testdox.txt
+              echo '```'
+            else
+              echo "Relatório do PHPUnit não foi gerado."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publicar relatórios como artefato
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultados-testes-${{ github.run_number }}
+          path: |
+            tests/results/
+            health.json
+            php-server.log
+          if-no-files-found: warn

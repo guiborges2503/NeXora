@@ -123,7 +123,20 @@ Mapa dos testes unitários (veja a aba *Automacao* da planilha):
 
 ## 11. Pipeline CI/CD
 
-_A configurar (GitHub Actions)._ O link das execuções vai ficar aqui.
+- **Ferramenta:** GitHub Actions. Arquivo: `.github/workflows/testes.yml`
+- **Execuções:** <https://github.com/guiborges2503/NeXora/actions/workflows/testes.yml>
+- **Gatilhos:** push nas branches `p2-testes` e `main`, abertura ou atualização de pull
+  request para essas branches, e execução manual (*Run workflow*).
+- **Etapas:**
+  1. Obter o código e configurar o PHP 8.2
+  2. `composer install`
+  3. Subir um MySQL 8.4 temporário e rodar `scripts/reset-test-db.sh`
+  4. Rodar o PHPUnit
+  5. Verificar a API (`health.php` ligado ao `nexora_test`)
+  6. Publicar o resumo na página da execução e os relatórios como artefato
+     (`resultados-testes-N`)
+
+O pipeline não usa nenhuma credencial real. O banco é criado e descartado a cada execução.
 
 ## 12. Localização dos documentos
 
