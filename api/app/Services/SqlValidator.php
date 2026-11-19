@@ -56,15 +56,30 @@ class SqlValidator
             }
         }
 
-        if (preg_match('/\bLIMIT\s+(\d+)/i', $normalized, $m)) {
-            if ((int) $m[1] > $this->maxRows) {
-                $normalized = preg_replace('/\bLIMIT\s+\d+/i', 'LIMIT ' . $this->maxRows, $normalized);
-            }
-        } else {
-            $normalized .= ' LIMIT ' . $this->maxRows;
+        return $this->applyRowLimit($normalized);
+    }
+
+    /**
+     * Garante o teto de linhas (RF-08): sem LIMIT, acrescenta o máximo;
+     * com LIMIT acima do máximo, reduz para o máximo; abaixo, mantém.
+     */
+    private function applyRowLimit(string $sql): string
+    {
+        $pattern = '/\bLIMIT\s+(\d+)/i';
+
+        if (!preg_match($pattern, $sql)) {
+            return $sql . ' LIMIT ' . $this->maxRows;
         }
 
-        return $normalized;
+        $maxRows = $this->maxRows;
+
+        return preg_replace_callback(
+            $pattern,
+            static function (array $match) use ($maxRows): string {
+                return (int) $match[1] > $maxRows ? 'LIMIT ' . $maxRows : $match[0];
+            },
+            $sql
+        ) ?? $sql;
     }
 
     /**
