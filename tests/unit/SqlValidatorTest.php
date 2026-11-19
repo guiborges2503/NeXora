@@ -117,6 +117,23 @@ final class SqlValidatorTest extends TestCase
         $this->assertSame('SELECT id FROM sales LIMIT 10', $sql);
     }
 
+    /** @return array<string, array{string}> */
+    public static function limitesAcimaDoMaximo(): array
+    {
+        return [
+            'LIMIT 501'  => ['SELECT id FROM sales LIMIT 501'],
+            'LIMIT 1000' => ['SELECT id FROM sales LIMIT 1000'],
+        ];
+    }
+
+    // UT-07 — CT-028 / RF-08 / DEF-004 (ciclo de TDD)
+    #[DataProvider('limitesAcimaDoMaximo')]
+    #[TestDox('UT-07: reduz para LIMIT 500 quando a consulta pede mais linhas ($sql)')]
+    public function testReduzLimiteAcimaDoMaximo(string $sql): void
+    {
+        $this->assertSame('SELECT id FROM sales LIMIT 500', $this->validator->validateAndPrepare($sql));
+    }
+
     // UT-05 — RF-08 (caminho válido)
     #[TestDox('UT-05: aceita SELECT válido sobre tabelas permitidas e normaliza espaços')]
     public function testAceitaSelectValido(): void
