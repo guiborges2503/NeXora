@@ -56,7 +56,11 @@ class SqlValidator
             }
         }
 
-        if (!preg_match('/\bLIMIT\s+\d+/i', $normalized)) {
+        if (preg_match('/\bLIMIT\s+(\d+)/i', $normalized, $m)) {
+            if ((int) $m[1] > $this->maxRows) {
+                $normalized = preg_replace('/\bLIMIT\s+\d+/i', 'LIMIT ' . $this->maxRows, $normalized);
+            }
+        } else {
             $normalized .= ' LIMIT ' . $this->maxRows;
         }
 
